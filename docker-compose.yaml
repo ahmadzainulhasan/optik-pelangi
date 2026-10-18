@@ -3,7 +3,7 @@
 services:
   caddy:
     image: caddy:2-alpine
-    container_name: optik_pelangi_caddy
+    container_name: caddy
     restart: unless-stopped
     ports:
       - '443:443'
@@ -54,7 +54,7 @@ services:
 
   pgbouncer:
     image: edoburu/pgbouncer:v1.26.0-p0
-    container_name: optik_pelangi_pgbouncer
+    container_name: pgbouncer
     restart: unless-stopped
     ports:
       - '6432:6432'
@@ -82,4 +82,4 @@ volumes:
 
 networks:
   default:
-    name: optik_pelangi_network
+    name: optik_pelangi
