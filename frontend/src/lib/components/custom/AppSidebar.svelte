@@ -7,20 +7,12 @@
 
 <Sidebar.Root side="right">
 	<Sidebar.Header>
-		<a
-			href="/"
-			class="px-2 py-4 font-serif text-xl"
-			onclick={() => sidebar.setOpenMobile(false)}
-		>
+		<a href="/" class="px-2 py-4 font-serif text-xl" onclick={() => sidebar.setOpenMobile(false)}>
 			Optik Pelangi
 		</a>
 	</Sidebar.Header>
 	<Sidebar.Content />
 	<Sidebar.Footer>
-		<AuthModal
-			triggerVariant="default"
-			triggerClass="w-full"
-			onclick={() => sidebar.setOpenMobile(false)}
-		/>
+		<AuthModal />
 	</Sidebar.Footer>
 </Sidebar.Root>
