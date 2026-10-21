@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/entity"
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/redis/go-redis/v9"
@@ -11,22 +12,23 @@ import (
 )
 
 type JwtUtilImpl struct {
-	redis      *redis.Client
+	redis *redis.Client
 	viper *viper.Viper
 }
 
 func NewJwtUtilImpl(redis *redis.Client, viper *viper.Viper) *JwtUtilImpl {
 	return &JwtUtilImpl{
-		redis:      redis,
+		redis: redis,
 		viper: viper,
 	}
 }
 
-func (util *JwtUtilImpl) GenerateAccessToken(ctx context.Context, userID string, email string) (string, error) {	
-
+func (util *JwtUtilImpl) GenerateAccessToken(ctx context.Context, user entity.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": userID,
-		"email":   email,
+		"user_id": user.ID,
+		"email":   user.Email,
+		"name":    user.Name,
+		"picture": user.Picture,
 		"exp":     time.Now().Add(60 * time.Minute).UnixMilli(),
 	})
 
@@ -35,7 +37,7 @@ func (util *JwtUtilImpl) GenerateAccessToken(ctx context.Context, userID string,
 		return "", err
 	}
 
-	if err := util.redis.Set(ctx, accessToken, userID, 60*time.Minute).Err(); err != nil {
+	if err := util.redis.Set(ctx, accessToken, user.ID, 60*time.Minute).Err(); err != nil {
 		return "", err
 	}
 
@@ -43,7 +45,7 @@ func (util *JwtUtilImpl) GenerateAccessToken(ctx context.Context, userID string,
 }
 
 func (util *JwtUtilImpl) ValidateToken(ctx context.Context, accessToken string) (jwt.MapClaims, error) {
-	token, err := jwt.Parse(accessToken, func(token *jwt.Token) (any, error) {		
+	token, err := jwt.Parse(accessToken, func(token *jwt.Token) (any, error) {
 		return []byte(util.viper.GetString("JWT_SECRET")), nil
 	})
 
@@ -52,7 +54,7 @@ func (util *JwtUtilImpl) ValidateToken(ctx context.Context, accessToken string) 
 	}
 
 	claims := token.Claims.(jwt.MapClaims)
-	if int64(claims["exp"].(float64)) < time.Now().UnixMilli()  {
+	if int64(claims["exp"].(float64)) < time.Now().UnixMilli() {
 		return nil, fiber.ErrUnauthorized
 	}
 
@@ -67,4 +69,3 @@ func (util *JwtUtilImpl) ValidateToken(ctx context.Context, accessToken string) 
 
 	return claims, nil
 }
-

@@ -39,7 +39,7 @@ func TestGoogleCallbackSuccessNewUser(t *testing.T) {
 	mockOAuthClient.Mock.On("GetUserInfo", mock.Anything, "4/0AWgavTe-real_code_new_user_xyz123").Return(userInfo, nil).Once()
 	mockUserRepo.Mock.On("FindByEmail", mock.Anything, userInfo.Email).Return(entity.User{}, gorm.ErrRecordNotFound).Once()
 	mockUserRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
-	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, mock.Anything, mock.Anything).Return("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiNWYwZDNhMS1kZWIzLTQzNmQtOTYyMS02YzM1NWI3MjMwMWEiLCJlbWFpbCI6ImJ1ZGkuc2FudG9zb0BnbWFpbC5jb20iLCJleHAiOjE3NjAxNDQwMDB9.sig-budi-access-token", nil).Once()
+	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, mock.Anything).Return("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiNWYwZDNhMS1kZWIzLTQzNmQtOTYyMS02YzM1NWI3MjMwMWEiLCJlbWFpbCI6ImJ1ZGkuc2FudG9zb0BnbWFpbC5jb20iLCJleHAiOjE3NjAxNDQwMDB9.sig-budi-access-token", nil).Once()
 	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback?code=4/0AWgavTe-real_code_new_user_xyz123", nil)
@@ -72,7 +72,7 @@ func TestGoogleCallbackSuccessExistingUser(t *testing.T) {
 	mockOAuthClient.Mock.On("GetUserInfo", mock.Anything, "4/0AWgavTf-real_code_existing_user_abc456").Return(userInfo, nil).Once()
 	mockUserRepo.Mock.On("FindByEmail", mock.Anything, userInfo.Email).Return(user, nil).Once()
 	mockUserRepo.Mock.On("Save", mock.Anything, user).Return(nil).Once()
-	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, user.ID, user.Email).Return("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjM2IwZjVlMS04ZjRiLTRiMmEtOWUxYS01ZjhkMmIzYzRkNWUiLCJlbWFpbCI6InNpdGkuYW1pbmFoQGdtYWlsLmNvbSIsImV4cCI6MTc2MDE0NDAwMH0.sig-siti-access-token", nil).Once()
+	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, user).Return("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjM2IwZjVlMS04ZjRiLTRiMmEtOWUxYS01ZjhkMmIzYzRkNWUiLCJlbWFpbCI6InNpdGkuYW1pbmFoQGdtYWlsLmNvbSIsImV4cCI6MTc2MDE0NDAwMH0.sig-siti-access-token", nil).Once()
 	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback?code=4/0AWgavTf-real_code_existing_user_abc456", nil)
@@ -229,7 +229,7 @@ func TestGoogleCallbackTokenGenerationError(t *testing.T) {
 	mockOAuthClient.Mock.On("GetUserInfo", mock.Anything, "4/0AWgavTk-real_code_token_gen_err_333").Return(userInfo, nil).Once()
 	mockUserRepo.Mock.On("FindByEmail", mock.Anything, userInfo.Email).Return(entity.User{}, gorm.ErrRecordNotFound).Once()
 	mockUserRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
-	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, mock.Anything, mock.Anything).Return("", jwt.ErrInvalidKeyType).Once()
+	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, mock.Anything).Return("", jwt.ErrInvalidKeyType).Once()
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback?code=4/0AWgavTk-real_code_token_gen_err_333", nil)
 	response, err := app.Test(request)
@@ -260,7 +260,7 @@ func TestGoogleCallbackDatabaseErrorSaveRefreshToken(t *testing.T) {
 	mockOAuthClient.Mock.On("GetUserInfo", mock.Anything, "4/0AWgavTl-real_code_token_save_err_444").Return(userInfo, nil).Once()
 	mockUserRepo.Mock.On("FindByEmail", mock.Anything, userInfo.Email).Return(user, nil).Once()
 	mockUserRepo.Mock.On("Save", mock.Anything, user).Return(nil).Once()
-	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, user.ID, user.Email).Return("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlNWQyYjdhMy0wYjZkLTRkNGMtOWEzYy03YjBmNGQ1ZTZmN2EiLCJlbWFpbCI6InJpemt5LnByYXRhbWFAZ21haWwuY29tIiwiZXhwIjoxNzYwMTQ0MDAwfQ.sig-rizky-access-token", nil).Once()
+	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, user).Return("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlNWQyYjdhMy0wYjZkLTRkNGMtOWEzYy03YjBmNGQ1ZTZmN2EiLCJlbWFpbCI6InJpemt5LnByYXRhbWFAZ21haWwuY29tIiwiZXhwIjoxNzYwMTQ0MDAwfQ.sig-rizky-access-token", nil).Once()
 	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(gorm.ErrInvalidData).Once()
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback?code=4/0AWgavTl-real_code_token_save_err_444", nil)

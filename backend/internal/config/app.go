@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/delivery/http"
+	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/delivery/http/middleware"
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/delivery/http/route"
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/gateway/google"
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/repository"
@@ -19,21 +20,20 @@ import (
 )
 
 type BootstrapConfig struct {
-	DB           *gorm.DB
-	Redis        *redis.Client
-	OAuth2 		 *oauth2.Config
-	App          *fiber.App
-	Log          *zerolog.Logger
-	ViperConfig  *viper.Viper
-	Validator    *validator.Validate
-	Translator   ut.Translator
+	DB          *gorm.DB
+	Redis       *redis.Client
+	OAuth2      *oauth2.Config
+	App         *fiber.App
+	Log         *zerolog.Logger
+	ViperConfig *viper.Viper
+	Validator   *validator.Validate
+	Translator  ut.Translator
 }
 
 func Bootstrap(config *BootstrapConfig) {
-
 	userRepository := repository.NewUserRepositoryImpl()
 	refreshTokenRepository := repository.NewRefreshTokenRepositoryImpl()
-	
+
 	jwtUtil := util.NewJwtUtilImpl(config.Redis, config.ViperConfig)
 	googleOAuthClient := google.NewOAuthClientImpl(config.OAuth2)
 
@@ -43,15 +43,21 @@ func Bootstrap(config *BootstrapConfig) {
 		refreshTokenRepository,
 		jwtUtil,
 		config.Validator,
-		config.Log,		
+		config.Log,
 		googleOAuthClient,
 	)
-	
+
 	authHandler := http.NewAuthHandlerImpl(authUsecase, config.ViperConfig)
 
+	authMiddleware := middleware.NewAuthMiddleware(jwtUtil)
+	userUsecase := usecase.NewUserUsecaseImpl()
+	userHandler := http.NewUserHandlerImpl(userUsecase)
+
 	routeConfig := route.RouteConfig{
-		App:         config.App,
-		AuthHandler: authHandler,
+		App:            config.App,
+		AuthHandler:    authHandler,
+		UserHandler:    userHandler,
+		AuthMiddleware: authMiddleware,
 	}
 	routeConfig.Setup()
 }

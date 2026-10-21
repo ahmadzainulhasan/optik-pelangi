@@ -6,10 +6,11 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/config"
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/delivery/http"
+	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/delivery/http/middleware"
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/delivery/http/route"
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/usecase"
 	testMock "github.com/ahmadzainulhasan/optik-pelangi/backend/test/mock"
-	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog"
@@ -49,16 +50,25 @@ func init() {
 	mockOAuthClient = new(testMock.MockGoogleOAuthClient{Mock: mock.Mock{}})
 	mockJwtUtil = new(testMock.MockJwtUtil{Mock: mock.Mock{}})
 
+	authUsecase := usecase.NewAuthUsecaseImpl(
+		db,
+		mockUserRepo,
+		mockRefreshTokenRepo,
+		mockJwtUtil,
+		validate,
+		log,
+		mockOAuthClient,
+	)
+	authHandler := http.NewAuthHandlerImpl(authUsecase, viperConfig)
+
+	userUsecase := usecase.NewUserUsecaseImpl()
+	userHandler := http.NewUserHandlerImpl(userUsecase)
+	authMiddleware := middleware.NewAuthMiddleware(mockJwtUtil)
+
 	(&route.RouteConfig{
-		App: app,
-		AuthHandler: http.NewAuthHandlerImpl(usecase.NewAuthUsecaseImpl(
-			db,
-			mockUserRepo,
-			mockRefreshTokenRepo,
-			mockJwtUtil,
-			validate,
-			log,
-			mockOAuthClient,
-		), viperConfig),
+		App:            app,
+		AuthHandler:    authHandler,
+		UserHandler:    userHandler,
+		AuthMiddleware: authMiddleware,
 	}).Setup()
 }

@@ -87,7 +87,7 @@ func (usecase *AuthUsecaseImpl) ProcessGoogleCallback(ctx context.Context, code 
 			}
 		}
 
-		accessToken, err := usecase.jwtUtil.GenerateAccessToken(ctx, user.ID, user.Email)
+		accessToken, err := usecase.jwtUtil.GenerateAccessToken(ctx, user)
 		if err != nil {
 			usecase.log.Error().Err(err).Msg("Failed to generate access token")
 			return err
