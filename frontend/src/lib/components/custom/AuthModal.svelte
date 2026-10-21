@@ -1,76 +1,38 @@
 <script lang="ts">
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
-	import { Button, buttonVariants, type ButtonVariant } from '#lib/components/ui/button/index.js';
+	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
 	import { Spinner } from '#lib/components/ui/spinner/index.js';
-	import { cn } from '#lib/utils.js';
-	import type { Snippet } from 'svelte';
+	import { ORIGIN } from '$app/env/public';
+	import { refreshAll } from '$app/navigation';
 
-	interface Props {
-		open?: boolean;
-		triggerVariant?: ButtonVariant;
-		triggerClass?: string;
-		triggerText?: string;
-		trigger?: Snippet;
-		onclick?: (event: MouseEvent) => void;
-	}
-
-	let {
-		open = $bindable(false),
-		triggerVariant = 'ghost',
-		triggerClass = '',
-		triggerText = 'Masuk',
-		trigger,
-		onclick
-	}: Props = $props();
-
+	let open = $state(false);
 	let isLoading = $state(false);
 
 	function handleGoogleLogin() {
 		isLoading = true;
 
 		const popup = window.open(
-			'/api/auth/login',
+			`${ORIGIN}/api/auth/login`,
 			'GoogleAuthPopup',
 			`width=500,height=650,left=${window.screenX + (window.outerWidth - 500) / 2},top=${window.screenY + (window.outerHeight - 650) / 2},status=no,resizable=yes,scrollbars=yes`
 		);
 
 		popup?.focus();
-
-		function handleMessage(event: MessageEvent) {
-			if (event.data?.type === 'AUTH_SUCCESS') {
-				cleanup();
-				open = false;
-				window.dispatchEvent(new CustomEvent('auth:login_success'));
-			}	
-		}
-
-		const timer = setInterval(() => {
+		const interval = setInterval(() => {
 			if (popup?.closed) {
-				cleanup();
+				isLoading = false;
+				open = false;
+				refreshAll();
+				clearInterval(interval);
 			}
 		}, 1000);
-
-		function cleanup() {
-			clearInterval(timer);
-			window.removeEventListener('message', handleMessage);
-			isLoading = false;
-		}
-
-		window.addEventListener('message', handleMessage);
 	}
 </script>
 
 <Dialog.Root bind:open>
-	{#if trigger}
-		{@render trigger()}
-	{:else}
-		<Dialog.Trigger
-			class={cn(buttonVariants({ variant: triggerVariant }), triggerClass)}
-			{onclick}
-		>
-			{triggerText}
-		</Dialog.Trigger>
-	{/if}
+	<Dialog.Trigger type="button" class={buttonVariants({ variant: 'default' })}>
+		Masuk
+	</Dialog.Trigger>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title class="text-center text-2xl font-semibold">Masuk atau Daftar</Dialog.Title>
@@ -110,9 +72,13 @@
 
 			<p class="text-center text-xs text-muted-foreground">
 				Dengan melanjutkan, Anda menyetujui
-				<a href="/terms" class="underline hover:text-foreground">Syarat & Ketentuan</a>
+				<a href="/terms" class="underline hover:text-foreground" data-sveltekit-reload
+					>Syarat & Ketentuan</a
+				>
 				serta
-				<a href="/privacy" class="underline hover:text-foreground">Kebijakan Privasi</a> kami.
+				<a href="/privacy" class="underline hover:text-foreground" data-sveltekit-reload
+					>Kebijakan Privasi</a
+				> kami.
 			</p>
 		</div>
 	</Dialog.Content>

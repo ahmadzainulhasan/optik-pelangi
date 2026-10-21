@@ -23,6 +23,8 @@ services:
     image: frontend
     container_name: frontend
     restart: unless-stopped
+    environment:
+      ORIGIN: "${ORIGIN}"
     depends_on:
       - backend
 
@@ -49,6 +51,8 @@ services:
       GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
       GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"
       GOOGLE_REDIRECT_URL: "${GOOGLE_REDIRECT_URL}"
+      ORIGIN: "${ORIGIN}"
+      COOKIE_SAMESITE: "${COOKIE_SAMESITE}"
 
   pgbouncer:
     image: edoburu/pgbouncer:v1.26.0-p0

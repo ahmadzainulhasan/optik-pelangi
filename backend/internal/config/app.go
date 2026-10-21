@@ -47,7 +47,7 @@ func Bootstrap(config *BootstrapConfig) {
 		googleOAuthClient,
 	)
 	
-	authHandler := http.NewAuthHandlerImpl(authUsecase)
+	authHandler := http.NewAuthHandlerImpl(authUsecase, config.ViperConfig)
 
 	routeConfig := route.RouteConfig{
 		App:         config.App,
