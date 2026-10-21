@@ -2,6 +2,7 @@
 	import './layout.css';
 	import favicon from '#lib/assets/favicon.svg';
 	import type { LayoutProps } from './$types';
+	import * as Avatar from '#lib/components/ui/avatar/index.ts';
 
 	let { children }: LayoutProps = $props();
 </script>
@@ -11,4 +12,3 @@
 </svelte:head>
 
 {@render children()}
-

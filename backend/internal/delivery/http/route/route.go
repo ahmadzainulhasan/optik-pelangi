@@ -6,17 +6,17 @@ import (
 )
 
 type RouteConfig struct {
-	App         *fiber.App
-	AuthHandler http.AuthHandler
+	App            *fiber.App
+	AuthHandler    http.AuthHandler
+	UserHandler    http.UserHandler
+	AuthMiddleware fiber.Handler
 }
 
 func (config *RouteConfig) Setup() {
-	config.SetupAuthRoute()
-}
+	auth := config.App.Group("/auth")
+	auth.Get("/login", config.AuthHandler.GoogleLogin)
+	auth.Get("/callback", config.AuthHandler.GoogleCallback)
 
-func (config *RouteConfig) SetupAuthRoute() {
-	group := config.App.Group("/auth")
-
-	group.Get("/login", config.AuthHandler.GoogleLogin)
-	group.Get("/callback", config.AuthHandler.GoogleCallback)
+	user := config.App.Group("/users")
+	user.Get("/current", config.AuthMiddleware, config.UserHandler.GetCurrent)
 }

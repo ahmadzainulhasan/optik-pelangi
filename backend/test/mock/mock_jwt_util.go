@@ -3,6 +3,7 @@ package mock
 import (
 	"context"
 
+	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/entity"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/mock"
 )
@@ -11,8 +12,8 @@ type MockJwtUtil struct {
 	Mock mock.Mock
 }
 
-func (m *MockJwtUtil) GenerateAccessToken(ctx context.Context, userID string, email string) (string, error) {
-	args := m.Mock.Called(ctx, userID, email)
+func (m *MockJwtUtil) GenerateAccessToken(ctx context.Context, user entity.User) (string, error) {
+	args := m.Mock.Called(ctx, user)
 	return args.String(0), args.Error(1)
 }
 
