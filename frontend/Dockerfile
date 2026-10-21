@@ -8,11 +8,12 @@ RUN bun install --frozen-lockfile
 COPY . .
 RUN bun run --bun build
 
-FROM oven/bun:canary-alpine
+FROM alpine:3.21
 
 WORKDIR /app
 
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN apk add --no-cache libstdc++ && \
+	addgroup -S appgroup && adduser -S appuser -G appgroup
 
 COPY --from=builder /app/build/server /app/server
 
