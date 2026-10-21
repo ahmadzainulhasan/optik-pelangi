@@ -1,4 +1,6 @@
-export const load = () => {
+import type { PageLoad } from './$types';
+
+export const load: PageLoad = () => {
 	return {
 		title: 'Syarat & Ketentuan',
 		lastUpdated: '1 Januari 2026',

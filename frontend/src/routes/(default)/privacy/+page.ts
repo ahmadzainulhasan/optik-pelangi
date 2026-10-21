@@ -1,4 +1,6 @@
-export const load = () => {
+import type { PageLoad } from './$types';
+
+export const load: PageLoad = () => {
 	return {
 		title: 'Kebijakan Privasi',
 		lastUpdated: '1 Januari 2026',
