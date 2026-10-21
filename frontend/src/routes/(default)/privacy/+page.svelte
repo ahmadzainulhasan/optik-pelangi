@@ -22,7 +22,7 @@
 	</header>
 
 	<div class="container mx-auto max-w-3xl px-4 py-12 md:px-6">
-		<article class="prose prose-gray dark:prose-invert max-w-none">
+		<article class="prose max-w-none prose-gray dark:prose-invert">
 			{#each data.sections as section, i}
 				<div class="mb-8">
 					<h2 class="font-serif text-2xl font-medium text-foreground">{section.title}</h2>
@@ -39,4 +39,3 @@
 		</article>
 	</div>
 </main>
-
