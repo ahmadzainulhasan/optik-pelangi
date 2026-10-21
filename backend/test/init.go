@@ -33,21 +33,13 @@ var mockJwtUtil *testMock.MockJwtUtil
 
 func init() {
 	var sqlDB *sql.DB
-	var err error
-	sqlDB, sqlMock, err = sqlmock.New()
-	if err != nil {
-		panic(err)
-	}
+	sqlDB, sqlMock, _ = sqlmock.New()
 
-	db, err = gorm.Open(postgres.New(postgres.Config{
+	db, _ = gorm.Open(postgres.New(postgres.Config{
 		Conn: sqlDB,
 	}), &gorm.Config{})
-	if err != nil {
-		panic(err)
-	}
 
 	viperConfig = config.NewViper()
-	viperConfig.Set("JWT_SECRET", "super-secret-jwt-key-for-testing-purpose-123456")
 	log = config.NewLogger()
 	translator = config.NewTranslator()
 	validate = config.NewValidator(translator)
@@ -67,6 +59,6 @@ func init() {
 			validate,
 			log,
 			mockOAuthClient,
-		)),
+		), viperConfig),
 	}).Setup()
 }

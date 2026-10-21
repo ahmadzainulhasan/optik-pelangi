@@ -39,7 +39,7 @@ func (handler *AuthHandlerImpl) GoogleCallback(c fiber.Ctx) error {
 		Expires:  time.Now().Add(time.Minute * 60),
 		HTTPOnly: true,
 		Secure:   true,
-		SameSite: handler.viper.GetString("COOKIE_SAMESITE"),
+		SameSite: fiber.CookieSameSiteLaxMode,
 		Path:     "/",
 	})
 
@@ -49,9 +49,9 @@ func (handler *AuthHandlerImpl) GoogleCallback(c fiber.Ctx) error {
 		Expires:  time.Now().Add(time.Hour * 24 * 7),
 		HTTPOnly: true,
 		Secure:   true,
-		SameSite: handler.viper.GetString("COOKIE_SAMESITE"),
+		SameSite: fiber.CookieSameSiteLaxMode,
 		Path:     "/",
 	})
 
-	return c.Redirect().To(handler.viper.GetString("ORIGIN") + "/callback")
+	return c.Redirect().To(handler.viper.GetString("CLIENT_ORIGIN") + "/callback")
 }

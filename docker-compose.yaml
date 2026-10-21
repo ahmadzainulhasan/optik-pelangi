@@ -8,6 +8,9 @@ services:
     ports:
       - "443:443"
       - "80:80"
+    environment:
+      API_ORIGIN: "${API_ORIGIN}"
+      CLIENT_ORIGIN: "${CLIENT_ORIGIN}"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -25,7 +28,7 @@ services:
     container_name: frontend
     restart: unless-stopped
     environment:
-      ORIGIN: "${ORIGIN}"
+      API_ORIGIN: "${API_ORIGIN}"
     depends_on:
       - backend
 
@@ -50,8 +53,7 @@ services:
       GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
       GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"
       GOOGLE_REDIRECT_URL: "${GOOGLE_REDIRECT_URL}"
-      ORIGIN: "${ORIGIN}"
-      COOKIE_SAMESITE: "${COOKIE_SAMESITE}"
+      CLIENT_ORIGIN: "${CLIENT_ORIGIN}"
 
 volumes:
   caddy_data:
