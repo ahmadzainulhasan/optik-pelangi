@@ -8,5 +8,5 @@ import (
 
 type AuthUsecase interface {
 	GetGoogleLoginURL() string
-	ProcessGoogleCallback(ctx context.Context, code string) (model.AuthResponse, error)
+	ProcessGoogleCallback(ctx context.Context, code string) model.AuthResponse
 }

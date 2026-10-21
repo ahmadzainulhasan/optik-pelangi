@@ -11,7 +11,6 @@ import (
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/repository"
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/util"
 	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"gorm.io/gorm"
@@ -51,11 +50,11 @@ func (usecase *AuthUsecaseImpl) GetGoogleLoginURL() string {
 	return usecase.googleOAuthClient.GetLoginURL()
 }
 
-func (usecase *AuthUsecaseImpl) ProcessGoogleCallback(ctx context.Context, code string) (model.AuthResponse, error) {
+func (usecase *AuthUsecaseImpl) ProcessGoogleCallback(ctx context.Context, code string) model.AuthResponse {
 	userInfo, err := usecase.googleOAuthClient.GetUserInfo(ctx, code)
 	if err != nil {
 		usecase.log.Error().Err(err).Msg("Failed to authenticate with Google")
-		return model.AuthResponse{}, fiber.NewError(fiber.StatusBadRequest, "Autentikasi Google gagal atau kode otorisasi tidak valid")
+		return model.AuthResponse{}
 	}
 	
 	var authResponse model.AuthResponse
@@ -115,8 +114,8 @@ func (usecase *AuthUsecaseImpl) ProcessGoogleCallback(ctx context.Context, code 
 	})
 
 	if err != nil {
-		return model.AuthResponse{}, err
+		return model.AuthResponse{}
 	}
 
-	return authResponse, nil
+	return authResponse
 }

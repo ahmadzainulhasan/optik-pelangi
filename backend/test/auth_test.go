@@ -1,7 +1,6 @@
 package test
 
 import (
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,8 +8,10 @@ import (
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/entity"
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/model"
 	"github.com/gofiber/fiber/v3"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"golang.org/x/oauth2"
 	"gorm.io/gorm"
 )
 
@@ -83,34 +84,61 @@ func TestGoogleCallbackSuccessExistingUser(t *testing.T) {
 }
 
 func TestGoogleCallbackMissingCode(t *testing.T) {
-	mockOAuthClient.Mock.On("GetUserInfo", mock.Anything, "").Return(model.GoogleUserInfo{}, errors.New("empty authorization code")).Once()
+	mockOAuthClient.Mock.On("GetUserInfo", mock.Anything, "").Return(model.GoogleUserInfo{}, &oauth2.RetrieveError{
+		Response: &http.Response{
+			Status:     "400 Bad Request",
+			StatusCode: http.StatusBadRequest,
+		},
+		ErrorCode:        "invalid_request",
+		ErrorDescription: "Missing authorization code",
+	}).Once()
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback", nil)
 	response, err := app.Test(request)
 
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, response.StatusCode)
+	assert.Equal(t, 303, response.StatusCode)
+	assert.Equal(t, "http://localhost:5173/callback", response.Header.Get("Location"))
+	assert.Empty(t, response.Cookies())
 }
 
 func TestGoogleCallbackEmptyCode(t *testing.T) {
-	mockOAuthClient.Mock.On("GetUserInfo", mock.Anything, "").Return(model.GoogleUserInfo{}, errors.New("empty authorization code")).Once()
+	mockOAuthClient.Mock.On("GetUserInfo", mock.Anything, "").Return(model.GoogleUserInfo{}, &oauth2.RetrieveError{
+		Response: &http.Response{
+			Status:     "400 Bad Request",
+			StatusCode: http.StatusBadRequest,
+		},
+		ErrorCode:        "invalid_request",
+		ErrorDescription: "Empty authorization code",
+	}).Once()
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback?code=", nil)
 	response, err := app.Test(request)
 
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, response.StatusCode)
+	assert.Equal(t, 303, response.StatusCode)
+	assert.Equal(t, "http://localhost:5173/callback", response.Header.Get("Location"))
+	assert.Empty(t, response.Cookies())
 }
 
 func TestGoogleCallbackOAuthExchangeFailed(t *testing.T) {
 	mockOAuthClient.Mock.On("GetUserInfo", mock.Anything, "4/0AWgavTg-invalid-or-expired-auth-token-999").
-		Return(model.GoogleUserInfo{}, errors.New("oauth2: cannot fetch token: 400 Bad Request\nResponse: {\"error\": \"invalid_grant\", \"error_description\": \"Bad Request\"}")).Once()
+		Return(model.GoogleUserInfo{}, &oauth2.RetrieveError{
+			Response: &http.Response{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+			},
+			ErrorCode:        "invalid_grant",
+			ErrorDescription: "Bad Request",
+		}).Once()
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback?code=4/0AWgavTg-invalid-or-expired-auth-token-999", nil)
 	response, err := app.Test(request)
 
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, response.StatusCode)
+	assert.Equal(t, 303, response.StatusCode)
+	assert.Equal(t, "http://localhost:5173/callback", response.Header.Get("Location"))
+	assert.Empty(t, response.Cookies())
 }
 
 func TestGoogleCallbackDatabaseErrorFindUser(t *testing.T) {
@@ -124,13 +152,15 @@ func TestGoogleCallbackDatabaseErrorFindUser(t *testing.T) {
 	}
 
 	mockOAuthClient.Mock.On("GetUserInfo", mock.Anything, "4/0AWgavTh-real_code_find_err_789").Return(userInfo, nil).Once()
-	mockUserRepo.Mock.On("FindByEmail", mock.Anything, userInfo.Email).Return(entity.User{}, errors.New("dial tcp 127.0.0.1:3306: connect: connection refused")).Once()
+	mockUserRepo.Mock.On("FindByEmail", mock.Anything, userInfo.Email).Return(entity.User{}, gorm.ErrInvalidDB).Once()
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback?code=4/0AWgavTh-real_code_find_err_789", nil)
 	response, err := app.Test(request)
 
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusInternalServerError, response.StatusCode)
+	assert.Equal(t, 303, response.StatusCode)
+	assert.Equal(t, "http://localhost:5173/callback", response.Header.Get("Location"))
+	assert.Empty(t, response.Cookies())
 }
 
 func TestGoogleCallbackDatabaseErrorSaveNewUser(t *testing.T) {
@@ -145,13 +175,15 @@ func TestGoogleCallbackDatabaseErrorSaveNewUser(t *testing.T) {
 
 	mockOAuthClient.Mock.On("GetUserInfo", mock.Anything, "4/0AWgavTi-real_code_save_new_err_111").Return(userInfo, nil).Once()
 	mockUserRepo.Mock.On("FindByEmail", mock.Anything, userInfo.Email).Return(entity.User{}, gorm.ErrRecordNotFound).Once()
-	mockUserRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(errors.New("Error 1062 (23000): Duplicate entry 'dewi.lestari@gmail.com' for key 'users.email'")).Once()
+	mockUserRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(gorm.ErrDuplicatedKey).Once()
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback?code=4/0AWgavTi-real_code_save_new_err_111", nil)
 	response, err := app.Test(request)
 
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusInternalServerError, response.StatusCode)
+	assert.Equal(t, 303, response.StatusCode)
+	assert.Equal(t, "http://localhost:5173/callback", response.Header.Get("Location"))
+	assert.Empty(t, response.Cookies())
 }
 
 func TestGoogleCallbackDatabaseErrorUpdateExistingUser(t *testing.T) {
@@ -173,13 +205,15 @@ func TestGoogleCallbackDatabaseErrorUpdateExistingUser(t *testing.T) {
 
 	mockOAuthClient.Mock.On("GetUserInfo", mock.Anything, "4/0AWgavTj-real_code_update_err_222").Return(userInfo, nil).Once()
 	mockUserRepo.Mock.On("FindByEmail", mock.Anything, userInfo.Email).Return(user, nil).Once()
-	mockUserRepo.Mock.On("Save", mock.Anything, user).Return(errors.New("Error 1205 (HY000): Lock wait timeout exceeded; try restarting transaction")).Once()
+	mockUserRepo.Mock.On("Save", mock.Anything, user).Return(gorm.ErrInvalidTransaction).Once()
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback?code=4/0AWgavTj-real_code_update_err_222", nil)
 	response, err := app.Test(request)
 
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusInternalServerError, response.StatusCode)
+	assert.Equal(t, 303, response.StatusCode)
+	assert.Equal(t, "http://localhost:5173/callback", response.Header.Get("Location"))
+	assert.Empty(t, response.Cookies())
 }
 
 func TestGoogleCallbackTokenGenerationError(t *testing.T) {
@@ -195,13 +229,15 @@ func TestGoogleCallbackTokenGenerationError(t *testing.T) {
 	mockOAuthClient.Mock.On("GetUserInfo", mock.Anything, "4/0AWgavTk-real_code_token_gen_err_333").Return(userInfo, nil).Once()
 	mockUserRepo.Mock.On("FindByEmail", mock.Anything, userInfo.Email).Return(entity.User{}, gorm.ErrRecordNotFound).Once()
 	mockUserRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
-	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, mock.Anything, mock.Anything).Return("", errors.New("key is of invalid type")).Once()
+	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, mock.Anything, mock.Anything).Return("", jwt.ErrInvalidKeyType).Once()
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback?code=4/0AWgavTk-real_code_token_gen_err_333", nil)
 	response, err := app.Test(request)
 
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusInternalServerError, response.StatusCode)
+	assert.Equal(t, 303, response.StatusCode)
+	assert.Equal(t, "http://localhost:5173/callback", response.Header.Get("Location"))
+	assert.Empty(t, response.Cookies())
 }
 
 func TestGoogleCallbackDatabaseErrorSaveRefreshToken(t *testing.T) {
@@ -225,11 +261,13 @@ func TestGoogleCallbackDatabaseErrorSaveRefreshToken(t *testing.T) {
 	mockUserRepo.Mock.On("FindByEmail", mock.Anything, userInfo.Email).Return(user, nil).Once()
 	mockUserRepo.Mock.On("Save", mock.Anything, user).Return(nil).Once()
 	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, user.ID, user.Email).Return("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlNWQyYjdhMy0wYjZkLTRkNGMtOWEzYy03YjBmNGQ1ZTZmN2EiLCJlbWFpbCI6InJpemt5LnByYXRhbWFAZ21haWwuY29tIiwiZXhwIjoxNzYwMTQ0MDAwfQ.sig-rizky-access-token", nil).Once()
-	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(errors.New("Error 1048 (23000): Column 'token' cannot be null")).Once()
+	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(gorm.ErrInvalidData).Once()
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback?code=4/0AWgavTl-real_code_token_save_err_444", nil)
 	response, err := app.Test(request)
 
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusInternalServerError, response.StatusCode)
+	assert.Equal(t, 303, response.StatusCode)
+	assert.Equal(t, "http://localhost:5173/callback", response.Header.Get("Location"))
+	assert.Empty(t, response.Cookies())
 }
