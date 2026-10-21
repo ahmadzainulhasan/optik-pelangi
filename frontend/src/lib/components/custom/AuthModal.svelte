@@ -2,7 +2,7 @@
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
 	import { Spinner } from '#lib/components/ui/spinner/index.js';
-	import { ORIGIN } from '$app/env/public';
+	import { API_ORIGIN } from '$app/env/public';
 	import { refreshAll } from '$app/navigation';
 
 	let open = $state(false);
@@ -12,7 +12,7 @@
 		isLoading = true;
 
 		const popup = window.open(
-			`${ORIGIN}/api/auth/login`,
+			`${API_ORIGIN}/auth/login`,
 			'GoogleAuthPopup',
 			`width=500,height=650,left=${window.screenX + (window.outerWidth - 500) / 2},top=${window.screenY + (window.outerHeight - 650) / 2},status=no,resizable=yes,scrollbars=yes`
 		);

@@ -15,7 +15,7 @@ func (config *RouteConfig) Setup() {
 }
 
 func (config *RouteConfig) SetupAuthRoute() {
-	group := config.App.Group("/api/auth")
+	group := config.App.Group("/auth")
 
 	group.Get("/login", config.AuthHandler.GoogleLogin)
 	group.Get("/callback", config.AuthHandler.GoogleCallback)

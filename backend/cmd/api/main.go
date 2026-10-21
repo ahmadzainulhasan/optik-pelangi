@@ -16,20 +16,20 @@ func main() {
 	app := config.NewFiber(viperConfig, translator)
 
 	config.Bootstrap(&config.BootstrapConfig{
-		DB:           db,
-		Redis:        redis,
-		OAuth2: 		 oauth2,
-		App:          app,
-		Log:          log,
-		ViperConfig:  viperConfig,
-		Validator:    validator,
-		Translator:   translator,
+		DB:          db,
+		Redis:       redis,
+		OAuth2:      oauth2,
+		App:         app,
+		Log:         log,
+		ViperConfig: viperConfig,
+		Validator:   validator,
+		Translator:  translator,
 	})
 
 	err := app.Listen(":3000", fiber.ListenConfig{
 		EnablePrefork: true,
 	})
-	
+
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to start server")
 	}
