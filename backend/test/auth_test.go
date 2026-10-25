@@ -49,7 +49,10 @@ func TestGoogleCallbackSuccessNewUser(t *testing.T) {
 	assert.Equal(t, 303, response.StatusCode)
 	assert.Equal(t, "http://localhost:5173/callback", response.Header.Get("Location"))
 	assert.Len(t, response.Cookies(), 2)
-	assert.Equal(t, http.SameSiteLaxMode, response.Cookies()[0].SameSite)
+	assert.Equal(t, http.SameSiteStrictMode, response.Cookies()[0].SameSite)
+	assert.True(t, response.Cookies()[0].Secure)
+	assert.Equal(t, http.SameSiteStrictMode, response.Cookies()[1].SameSite)
+	assert.True(t, response.Cookies()[1].Secure)
 }
 
 func TestGoogleCallbackSuccessExistingUser(t *testing.T) {
@@ -81,6 +84,10 @@ func TestGoogleCallbackSuccessExistingUser(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 303, response.StatusCode)
 	assert.Len(t, response.Cookies(), 2)
+	assert.Equal(t, http.SameSiteStrictMode, response.Cookies()[0].SameSite)
+	assert.True(t, response.Cookies()[0].Secure)
+	assert.Equal(t, http.SameSiteStrictMode, response.Cookies()[1].SameSite)
+	assert.True(t, response.Cookies()[1].Secure)
 }
 
 func TestGoogleCallbackMissingCode(t *testing.T) {
