@@ -30,13 +30,14 @@ func (handler *AuthHandlerImpl) GoogleCallback(c fiber.Ctx) error {
 
 	authResponse := handler.authUsecase.ProcessGoogleCallback(c.Context(), code)
 	if authResponse.AccessToken != "" {
+
 		c.Cookie(&fiber.Cookie{
 			Name:     "access_token",
 			Value:    authResponse.AccessToken,
 			Expires:  time.Now().Add(time.Minute * 60),
 			HTTPOnly: true,
 			Secure:   true,
-			SameSite: fiber.CookieSameSiteLaxMode,
+			SameSite: fiber.CookieSameSiteStrictMode,
 			Path:     "/",
 		})
 
@@ -46,7 +47,7 @@ func (handler *AuthHandlerImpl) GoogleCallback(c fiber.Ctx) error {
 			Expires:  time.Now().Add(time.Hour * 24 * 7),
 			HTTPOnly: true,
 			Secure:   true,
-			SameSite: fiber.CookieSameSiteLaxMode,
+			SameSite: fiber.CookieSameSiteStrictMode,
 			Path:     "/",
 		})
 	}
