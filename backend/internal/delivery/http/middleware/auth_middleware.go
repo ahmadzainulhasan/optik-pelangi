@@ -1,18 +1,21 @@
 package middleware
 
 import (
+	"strings"
+
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/util"
 	"github.com/gofiber/fiber/v3"
 )
 
 func NewAuthMiddleware(jwtUtil util.JwtUtil) fiber.Handler {
 	return func(c fiber.Ctx) error {
-		accessToken := c.Cookies("access_token")
-		if accessToken == "" {
+		authHeader := c.Get("Authorization")
+		if !strings.HasPrefix(authHeader, "Bearer ") {
 			return fiber.ErrUnauthorized
 		}
 
-		claims, err := jwtUtil.ValidateToken(c.Context(), accessToken)
+		token := strings.TrimPrefix(authHeader, "Bearer ")
+		claims, err := jwtUtil.ValidateToken(c.Context(), token)
 		if err != nil {
 			return fiber.ErrUnauthorized
 		}

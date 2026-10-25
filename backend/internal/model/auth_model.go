@@ -1,7 +1,11 @@
 package model
 
-type LoginRequest struct {
-	AuthorizationCode string `query:"authorization_code" validate:"required"`
+type GoogleCallbackRequest struct {
+	Code        string `query:"code" validate:"required"`
+	State       string `query:"state" validate:"required,subtle_eqfield=CookieState"`
+	CookieState string `cookie:"oauth_state" validate:"required"`
+	Verifier    string `cookie:"pkce_verifier" validate:"required"`
+	Error       string `query:"error" validate:"empty"`
 }
 
 type GoogleUserInfo struct {
@@ -12,6 +16,16 @@ type GoogleUserInfo struct {
 }
 
 type AuthResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
+	AccessToken  string
+	RefreshToken string
+}
+
+type LoginResponse struct {
+	AccessToken string `json:"accessToken"`
+}
+
+type GoogleLoginResult struct {
+	URL      string
+	State    string
+	Verifier string
 }

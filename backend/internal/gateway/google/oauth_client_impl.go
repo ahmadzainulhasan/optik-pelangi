@@ -18,12 +18,17 @@ func NewOAuthClientImpl(oauth2 *oauth2.Config) *OAuthClientImpl {
 	}
 }
 
-func (client *OAuthClientImpl) GetLoginURL() string {
-	return client.oauth2.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+func (client *OAuthClientImpl) GetLoginURL(state string, codeChallenge string) string {
+	return client.oauth2.AuthCodeURL(
+		state,
+		oauth2.AccessTypeOffline,
+		oauth2.SetAuthURLParam("code_challenge", codeChallenge),
+		oauth2.SetAuthURLParam("code_challenge_method", "S256"),
+	)
 }
 
-func (client *OAuthClientImpl) GetUserInfo(ctx context.Context, code string) (model.GoogleUserInfo, error) {
-	token, err := client.oauth2.Exchange(ctx, code)
+func (client *OAuthClientImpl) GetUserInfo(ctx context.Context, code string, codeVerifier string) (model.GoogleUserInfo, error) {
+	token, err := client.oauth2.Exchange(ctx, code, oauth2.SetAuthURLParam("code_verifier", codeVerifier))
 	if err != nil {
 		return model.GoogleUserInfo{}, err
 	}

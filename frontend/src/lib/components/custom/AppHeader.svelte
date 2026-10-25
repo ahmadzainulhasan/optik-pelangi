@@ -1,15 +1,6 @@
 <script lang="ts">
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
-	import * as Avatar from '#lib/components/ui/avatar/index.js';
-	import AuthModal from '#lib/components/custom/AuthModal.svelte';
-	import type { User } from '#lib/types/user.js';
-	import { getInitials } from '#lib/helpers/avatar.js';
-
-	interface Props {
-		user?: User | null;
-	}
-
-	let { user = null }: Props = $props();
+	import { Button } from '#lib/components/ui/button/index.js';
 </script>
 
 <header
@@ -22,13 +13,6 @@
 	</div>
 
 	<div class="hidden md:block">
-		{#if user}
-			<Avatar.Root>
-				<Avatar.Image src={user.picture} alt={user.name} />
-				<Avatar.Fallback>{getInitials(user.name)}</Avatar.Fallback>
-			</Avatar.Root>
-		{:else}
-			<AuthModal />
-		{/if}
+		<Button href="/auth/login">Masuk</Button>
 	</div>
 </header>

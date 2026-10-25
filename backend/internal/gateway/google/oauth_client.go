@@ -7,6 +7,6 @@ import (
 )
 
 type OAuthClient interface {
-	GetLoginURL() string
-	GetUserInfo(ctx context.Context, code string) (model.GoogleUserInfo, error)
+	GetLoginURL(state string, codeChallenge string) string
+	GetUserInfo(ctx context.Context, code string, codeVerifier string) (model.GoogleUserInfo, error)
 }
