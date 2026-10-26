@@ -14,6 +14,6 @@ type PageResponse[T any] struct {
 type PageMetadata struct {
 	Page      int   `json:"page"`
 	Size      int   `json:"size"`
-	TotalItem int64 `json:"total_item"`
-	TotalPage int64 `json:"total_page"`
+	TotalItem int64 `json:"totalItem"`
+	TotalPage int64 `json:"totalPage"`
 }

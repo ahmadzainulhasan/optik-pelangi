@@ -3,6 +3,7 @@ package http
 import (
 	"time"
 
+	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/model"
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/usecase"
 	"github.com/gofiber/fiber/v3"
 	"github.com/spf13/viper"
@@ -21,36 +22,60 @@ func NewAuthHandlerImpl(authUsecase usecase.AuthUsecase, viper *viper.Viper) *Au
 }
 
 func (handler *AuthHandlerImpl) GoogleLogin(c fiber.Ctx) error {
-	loginURL := handler.authUsecase.GetGoogleLoginURL()
-	return c.Redirect().To(loginURL)
+	loginResult, err := handler.authUsecase.GetGoogleLogin()
+	if err != nil {
+		return fiber.ErrInternalServerError
+	}
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "oauth_state",
+		Value:    loginResult.State,
+		Expires:  time.Now().Add(5 * time.Minute),
+		HTTPOnly: true,
+		Secure:   true,
+		SameSite: fiber.CookieSameSiteLaxMode,
+		Path:     "/",
+	})
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "pkce_verifier",
+		Value:    loginResult.Verifier,
+		Expires:  time.Now().Add(5 * time.Minute),
+		HTTPOnly: true,
+		Secure:   true,
+		SameSite: fiber.CookieSameSiteLaxMode,
+		Path:     "/",
+	})
+
+	return c.Redirect().To(loginResult.URL)
 }
 
 func (handler *AuthHandlerImpl) GoogleCallback(c fiber.Ctx) error {
-	code := c.Query("code")
+	defer c.ClearCookie("oauth_state", "pkce_verifier")
 
-	authResponse := handler.authUsecase.ProcessGoogleCallback(c.Context(), code)
-	if authResponse.AccessToken != "" {
-
-		c.Cookie(&fiber.Cookie{
-			Name:     "access_token",
-			Value:    authResponse.AccessToken,
-			Expires:  time.Now().Add(time.Minute * 60),
-			HTTPOnly: true,
-			Secure:   true,
-			SameSite: fiber.CookieSameSiteStrictMode,
-			Path:     "/",
-		})
-
-		c.Cookie(&fiber.Cookie{
-			Name:     "refresh_token",
-			Value:    authResponse.RefreshToken,
-			Expires:  time.Now().Add(time.Hour * 24 * 7),
-			HTTPOnly: true,
-			Secure:   true,
-			SameSite: fiber.CookieSameSiteStrictMode,
-			Path:     "/",
-		})
+	var request model.GoogleCallbackRequest
+	if err := c.Bind().All(&request); err != nil {
+		return fiber.ErrBadRequest
 	}
 
-	return c.Redirect().To(handler.viper.GetString("CLIENT_ORIGIN") + "/callback")
+	authResponse, err := handler.authUsecase.ProcessGoogleCallback(c.Context(), request)
+	if err != nil {
+		return err
+	}
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    authResponse.RefreshToken,
+		Expires:  time.Now().Add(time.Hour * 24 * 7),
+		HTTPOnly: true,
+		Secure:   true,
+		SameSite: fiber.CookieSameSiteStrictMode,
+		Path:     "/auth",
+	})
+
+	return c.JSON(model.WebResponse[model.LoginResponse]{
+		Data: model.LoginResponse{
+			AccessToken: authResponse.AccessToken,
+		},
+	})
 }

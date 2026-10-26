@@ -4,15 +4,15 @@
 	import AppSidebar from '#lib/components/custom/AppSidebar.svelte';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 
-	let { data, children }: LayoutProps = $props();
+	let { children }: LayoutProps = $props();
 </script>
 
 <Sidebar.Provider>
 	<div class="md:hidden">
-		<AppSidebar user={data.user} />
+		<AppSidebar />
 	</div>
 	<div class="flex min-h-screen w-full flex-col">
-		<AppHeader user={data.user} />
+		<AppHeader />
 		{@render children()}
 	</div>
 </Sidebar.Provider>

@@ -1,5 +1,9 @@
 import type { PageLoad } from './$types';
 
+export const ssr = true;
+export const csr = false;
+export const prerender = false;
+
 export const load: PageLoad = () => {
 	return {
 		title: 'Kebijakan Privasi',
@@ -39,4 +43,3 @@ export const load: PageLoad = () => {
 		]
 	};
 };
-

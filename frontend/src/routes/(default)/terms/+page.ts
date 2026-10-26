@@ -1,5 +1,9 @@
 import type { PageLoad } from './$types';
 
+export const ssr = true;
+export const csr = false;
+export const prerender = false;
+
 export const load: PageLoad = () => {
 	return {
 		title: 'Syarat & Ketentuan',
@@ -41,4 +45,3 @@ export const load: PageLoad = () => {
 		]
 	};
 };
-

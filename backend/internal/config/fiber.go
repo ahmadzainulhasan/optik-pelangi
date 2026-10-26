@@ -46,7 +46,7 @@ func NewFiber(viper *viper.Viper, translator ut.Translator) *fiber.App {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{viper.GetString("CLIENT_ORIGIN")},
 		AllowCredentials: true,
-		AllowHeaders:     []string{"Content-Type", "Accept"},
+		AllowHeaders:     []string{"Content-Type", "Accept", "Authorization"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
 	}))
 

@@ -11,13 +11,13 @@ type MockGoogleOAuthClient struct {
 	Mock mock.Mock
 }
 
-func (m *MockGoogleOAuthClient) GetLoginURL() string {
-	args := m.Mock.Called()
+func (m *MockGoogleOAuthClient) GetLoginURL(state string, codeChallenge string) string {
+	args := m.Mock.Called(state, codeChallenge)
 	return args.String(0)
 }
 
-func (m *MockGoogleOAuthClient) GetUserInfo(ctx context.Context, code string) (model.GoogleUserInfo, error) {
-	args := m.Mock.Called(ctx, code)
+func (m *MockGoogleOAuthClient) GetUserInfo(ctx context.Context, code string, codeVerifier string) (model.GoogleUserInfo, error) {
+	args := m.Mock.Called(ctx, code, codeVerifier)
 	if args.Get(0) == nil {
 		return model.GoogleUserInfo{}, args.Error(1)
 	}
