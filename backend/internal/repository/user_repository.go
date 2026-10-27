@@ -7,5 +7,6 @@ import (
 
 type UserRepository interface {
 	FindByEmail(tx *gorm.DB, email string) (entity.User, error)
+	FindByID(tx *gorm.DB, id any) (entity.User, error)
 	Save(tx *gorm.DB, user entity.User) error
 }

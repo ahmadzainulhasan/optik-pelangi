@@ -39,6 +39,7 @@ func Bootstrap(config *BootstrapConfig) {
 
 	authUsecase := usecase.NewAuthUsecaseImpl(
 		config.DB,
+		config.Redis,
 		userRepository,
 		refreshTokenRepository,
 		jwtUtil,

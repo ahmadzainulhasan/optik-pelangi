@@ -39,8 +39,10 @@ func init() {
 	mockOAuthClient = new(testMock.MockGoogleOAuthClient{Mock: mock.Mock{}})
 	mockJwtUtil = new(testMock.MockJwtUtil{Mock: mock.Mock{}})
 
+	redisClient := config.NewRedis(viperConfig, log)
 	authUsecase := usecase.NewAuthUsecaseImpl(
 		db,
+		redisClient,
 		mockUserRepo,
 		mockRefreshTokenRepo,
 		mockJwtUtil,

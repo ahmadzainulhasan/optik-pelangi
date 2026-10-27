@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -14,13 +15,16 @@ import (
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/repository"
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/util"
 	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"gorm.io/gorm"
 )
 
 type AuthUsecaseImpl struct {
 	DB                     *gorm.DB
+	redis                  *redis.Client
 	userRepository         repository.UserRepository
 	refreshTokenRepository repository.RefreshTokenRepository
 	jwtUtil                util.JwtUtil
@@ -31,6 +35,7 @@ type AuthUsecaseImpl struct {
 
 func NewAuthUsecaseImpl(
 	db *gorm.DB,
+	redis *redis.Client,
 	userRepository repository.UserRepository,
 	refreshTokenRepository repository.RefreshTokenRepository,
 	jwtUtil util.JwtUtil,
@@ -40,6 +45,7 @@ func NewAuthUsecaseImpl(
 ) *AuthUsecaseImpl {
 	return &AuthUsecaseImpl{
 		DB:                     db,
+		redis:                  redis,
 		userRepository:         userRepository,
 		refreshTokenRepository: refreshTokenRepository,
 		jwtUtil:                jwtUtil,
@@ -139,6 +145,69 @@ func (usecase *AuthUsecaseImpl) ProcessGoogleCallback(ctx context.Context, reque
 
 	if err != nil {
 		return model.AuthResponse{}, err
+	}
+
+	return authResponse, nil
+}
+
+func (usecase *AuthUsecaseImpl) RotateToken(ctx context.Context, refreshToken string) (model.AuthResponse, error) {
+	if refreshToken == "" {
+		return model.AuthResponse{}, fiber.ErrUnauthorized
+	}
+
+	cached, err := usecase.redis.Get(ctx, refreshToken).Bytes()
+	if err == nil {
+		var authResp model.AuthResponse
+		if err := json.Unmarshal(cached, &authResp); err == nil {
+			return authResp, nil
+		}
+	}
+
+	var authResponse model.AuthResponse
+	err = usecase.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		tokenEntity, err := usecase.refreshTokenRepository.FindByToken(tx, refreshToken)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return fiber.ErrUnauthorized
+			}
+			usecase.log.Error().Err(err).Msg("Failed to find refresh token")
+			return err
+		}
+
+		if time.Now().After(tokenEntity.ExpiresAt) {
+			return fiber.ErrUnauthorized
+		}
+
+		user, err := usecase.userRepository.FindByID(tx, tokenEntity.UserID)
+		if err != nil {
+			usecase.log.Error().Err(err).Msg("Failed to find user for refresh token")
+			return err
+		}
+
+		authResponse.AccessToken, err = usecase.jwtUtil.GenerateAccessToken(ctx, user)
+		if err != nil {
+			usecase.log.Error().Err(err).Msg("Failed to generate access token")
+			return err
+		}
+
+		authResponse.RefreshToken = uuid.New().String()
+		tokenEntity.Token = authResponse.RefreshToken
+		tokenEntity.ExpiresAt = time.Now().Add(7 * 24 * time.Hour)
+		if err := usecase.refreshTokenRepository.Save(tx, tokenEntity); err != nil {
+			usecase.log.Error().Err(err).Msg("Failed to update refresh token in database")
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return model.AuthResponse{}, err
+	}
+
+	data, err := json.Marshal(authResponse)
+	if err == nil {
+		_ = usecase.redis.Set(ctx, refreshToken, data, 30*time.Second).Err()
 	}
 
 	return authResponse, nil

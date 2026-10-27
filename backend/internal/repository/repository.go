@@ -19,7 +19,12 @@ func (repository *Repository[T]) CountById(tx *gorm.DB, id any) (int64, error) {
 	return total, err
 }
 
-func (repository *Repository[T]) FindById(tx *gorm.DB, id any) error {
-	return tx.Where("id = ?", id).Take(new(T)).Error
+func (repository *Repository[T]) FindByID(tx *gorm.DB, id any) (T, error) {
+	var entity T
+	err := tx.Where("id = ?", id).Take(&entity).Error
+	if err != nil {
+		return entity, err
+	}
+	return entity, nil
 }
 	
