@@ -1,16 +1,22 @@
 package test
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/config"
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/entity"
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/model"
+	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/usecase"
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/oauth2"
@@ -56,7 +62,7 @@ func TestGoogleCallbackSuccessNewUser(t *testing.T) {
 		return u.Email == userInfo.Email
 	})).Return("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiNWYwZDNhMS1kZWIzLTQzNmQtOTYyMS02YzM1NWI3MjMwMWEiLCJlbWFpbCI6ImJ1ZGkuc2FudG9zb0BnbWFpbC5jb20iLCJleHAiOjE3NjAxNDQwMDB9.sig-budi-access-token", nil)
 	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.MatchedBy(func(rt entity.RefreshToken) bool {
-		return rt.UserID != "c3b0f5e1-8f4b-4b2a-9e1a-5f8d2b3c4d5e" && rt.UserID != "e5d2b7a3-0b6d-4d4c-9a3c-7b0f4d5e6f7a"
+		return rt.UserID != "c3b0f5e1-8f4b-4b2a-9e1a-5f8d2b3c4d5e" && rt.UserID != "e5d2b7a3-0b6d-4d4c-9a3c-7b0f4d5e6f7a" && rt.UserID != "f6a1b2c3-4d4e-bf5a-6b7c-8d9e0f1a2b3c"
 	})).Return(nil)
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback?code=4/0AWgavTe-real_code_new_user_xyz123&state=valid-state-secret-1234567890", nil)
@@ -488,4 +494,225 @@ func TestGoogleCallbackDatabaseErrorSaveRefreshToken(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &webResponse)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, webResponse.Errors)
+}
+
+
+func TestRefreshTokenSuccess(t *testing.T) {
+	user := entity.User{
+		ID:      "a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d",
+		Email:   "siti.rahmawati@gmail.com",
+		Name:    "Siti Rahmawati",
+		Picture: "https://lh3.googleusercontent.com/a/ACg8ocIq7Q8m_siti_avatar=s96-c",
+	}
+
+	mockRefreshTokenRepo.Mock.On("FindByToken", mock.Anything, "valid-refresh-token-in-db-111").Return(entity.RefreshToken{
+		ID:        "token-id-1",
+		UserID:    user.ID,
+		Token:     "valid-refresh-token-in-db-111",
+		ExpiresAt: time.Now().Add(time.Hour),
+	}, nil)
+	mockUserRepo.Mock.On("FindByID", mock.Anything, user.ID).Return(user, nil)
+	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, mock.MatchedBy(func(u entity.User) bool {
+		return u.ID == user.ID
+	})).Return("new-rotated-access-token-jwt", nil)
+	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.MatchedBy(func(rt entity.RefreshToken) bool {
+		return rt.ID == "token-id-1" && rt.UserID == user.ID && rt.Token != "valid-refresh-token-in-db-111"
+	})).Return(nil)
+
+	request := httptest.NewRequest(fiber.MethodPost, "/auth/refresh", nil)
+	request.Header.Set("Cookie", "refresh_token=valid-refresh-token-in-db-111")
+	response, err := app.Test(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
+
+	bodyBytes, err := io.ReadAll(response.Body)
+	assert.NoError(t, err)
+
+	var webResponse model.WebResponse[model.LoginResponse]
+	err = json.Unmarshal(bodyBytes, &webResponse)
+	assert.NoError(t, err)
+	assert.Equal(t, "new-rotated-access-token-jwt", webResponse.Data.AccessToken)
+
+	assert.Len(t, response.Cookies(), 1)
+	assert.Equal(t, "refresh_token", response.Cookies()[0].Name)
+	assert.Equal(t, "/auth", response.Cookies()[0].Path)
+	assert.Equal(t, http.SameSiteStrictMode, response.Cookies()[0].SameSite)
+	assert.True(t, response.Cookies()[0].HttpOnly)
+	assert.True(t, response.Cookies()[0].Secure)
+	assert.NotEmpty(t, response.Cookies()[0].Value)
+	assert.NotEqual(t, "valid-refresh-token-in-db-111", response.Cookies()[0].Value)
+}
+
+func TestRefreshTokenUnauthorizedNoCookie(t *testing.T) {
+	request := httptest.NewRequest(fiber.MethodPost, "/auth/refresh", nil)
+	response, err := app.Test(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, response.StatusCode)
+}
+
+func TestRefreshTokenUnauthorizedEmptyCookie(t *testing.T) {
+	request := httptest.NewRequest(fiber.MethodPost, "/auth/refresh", nil)
+	request.Header.Set("Cookie", "refresh_token=   ")
+	response, err := app.Test(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, response.StatusCode)
+}
+
+func TestRefreshTokenInvalidOrExpired(t *testing.T) {
+	mockRefreshTokenRepo.Mock.On("FindByToken", mock.Anything, "expired-or-revoked-token-333").Return(entity.RefreshToken{}, gorm.ErrRecordNotFound)
+
+	request := httptest.NewRequest(fiber.MethodPost, "/auth/refresh", nil)
+	request.Header.Set("Cookie", "refresh_token=expired-or-revoked-token-333")
+	response, err := app.Test(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, response.StatusCode)
+	assert.NotEmpty(t, response.Cookies())
+}
+
+func TestRefreshTokenDatabaseErrorFindByToken(t *testing.T) {
+	mockRefreshTokenRepo.Mock.On("FindByToken", mock.Anything, "db-err-find-token-222").Return(entity.RefreshToken{}, errors.New("db find failed"))
+
+	request := httptest.NewRequest(fiber.MethodPost, "/auth/refresh", nil)
+	request.Header.Set("Cookie", "refresh_token=db-err-find-token-222")
+	response, err := app.Test(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusInternalServerError, response.StatusCode)
+	assert.Empty(t, response.Cookies())
+}
+
+func TestRefreshTokenDatabaseErrorFindUser(t *testing.T) {
+	mockRefreshTokenRepo.Mock.On("FindByToken", mock.Anything, "valid-token-user-deleted-444").Return(entity.RefreshToken{
+		ID:        "token-id-4",
+		UserID:    "non-existent-user-uuid",
+		Token:     "valid-token-user-deleted-444",
+		ExpiresAt: time.Now().Add(time.Hour),
+	}, nil)
+	mockUserRepo.Mock.On("FindByID", mock.Anything, "non-existent-user-uuid").Return(entity.User{}, errors.New("db find user error"))
+
+	request := httptest.NewRequest(fiber.MethodPost, "/auth/refresh", nil)
+	request.Header.Set("Cookie", "refresh_token=valid-token-user-deleted-444")
+	response, err := app.Test(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusInternalServerError, response.StatusCode)
+}
+
+func TestRefreshTokenExpiredToken(t *testing.T) {
+	mockRefreshTokenRepo.Mock.On("FindByToken", mock.Anything, "token-already-expired-555").Return(entity.RefreshToken{
+		ID:        "token-id-5",
+		UserID:    "user-id-5",
+		Token:     "token-already-expired-555",
+		ExpiresAt: time.Now().Add(-1 * time.Hour),
+	}, nil)
+
+	request := httptest.NewRequest(fiber.MethodPost, "/auth/refresh", nil)
+	request.Header.Set("Cookie", "refresh_token=token-already-expired-555")
+	response, err := app.Test(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, response.StatusCode)
+}
+
+func TestRefreshTokenTokenGenerationError(t *testing.T) {
+	user := entity.User{
+		ID:    "c3d4e5f6-a1b2-4c3d-ae4f-5a6b7c8d9e0f",
+		Email: "putri.anggraini@gmail.com",
+	}
+
+	mockRefreshTokenRepo.Mock.On("FindByToken", mock.Anything, "jwt-err-token-666").Return(entity.RefreshToken{
+		ID:        "token-id-6",
+		UserID:    user.ID,
+		Token:     "jwt-err-token-666",
+		ExpiresAt: time.Now().Add(time.Hour),
+	}, nil)
+	mockUserRepo.Mock.On("FindByID", mock.Anything, user.ID).Return(user, nil)
+	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, mock.MatchedBy(func(u entity.User) bool {
+		return u.ID == user.ID
+	})).Return("", errors.New("jwt sign error"))
+
+	request := httptest.NewRequest(fiber.MethodPost, "/auth/refresh", nil)
+	request.Header.Set("Cookie", "refresh_token=jwt-err-token-666")
+	response, err := app.Test(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusInternalServerError, response.StatusCode)
+}
+
+func TestRefreshTokenDatabaseErrorSaveNewToken(t *testing.T) {
+	user := entity.User{
+		ID:    "f6a1b2c3-4d4e-bf5a-6b7c-8d9e0f1a2b3c",
+		Email: "bayu.wicaksono@gmail.com",
+	}
+
+	mockRefreshTokenRepo.Mock.On("FindByToken", mock.Anything, "db-err-save-token-777").Return(entity.RefreshToken{
+		ID:        "token-id-7",
+		UserID:    user.ID,
+		Token:     "db-err-save-token-777",
+		ExpiresAt: time.Now().Add(time.Hour),
+	}, nil)
+	mockUserRepo.Mock.On("FindByID", mock.Anything, user.ID).Return(user, nil)
+	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, mock.MatchedBy(func(u entity.User) bool {
+		return u.ID == user.ID
+	})).Return("new-access-token-jwt", nil)
+	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.MatchedBy(func(rt entity.RefreshToken) bool {
+		return rt.UserID == user.ID
+	})).Return(errors.New("db save failed"))
+
+	request := httptest.NewRequest(fiber.MethodPost, "/auth/refresh", nil)
+	request.Header.Set("Cookie", "refresh_token=db-err-save-token-777")
+	response, err := app.Test(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusInternalServerError, response.StatusCode)
+}
+
+func TestRefreshTokenGracePeriodFromRedis(t *testing.T) {
+	redisClient := config.NewRedis(viperConfig, log)
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
+		t.Skip("redis is not available")
+	}
+
+	testUsecase := usecase.NewAuthUsecaseImpl(
+		db,
+		redisClient,
+		mockUserRepo,
+		mockRefreshTokenRepo,
+		mockJwtUtil,
+		validate,
+		log,
+		mockOAuthClient,
+	)
+
+	user := entity.User{
+		ID:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		Email: "grace.period@gmail.com",
+	}
+
+	token1 := "test-grace-t1-" + uuid.New().String()
+	mockRefreshTokenRepo.Mock.On("FindByToken", mock.Anything, token1).Return(entity.RefreshToken{
+		ID:        "grace-token-id",
+		UserID:    user.ID,
+		Token:     token1,
+		ExpiresAt: time.Now().Add(time.Hour),
+	}, nil)
+	mockUserRepo.Mock.On("FindByID", mock.Anything, user.ID).Return(user, nil)
+	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, mock.MatchedBy(func(u entity.User) bool {
+		return u.ID == user.ID
+	})).Return("grace-access-token-123", nil)
+	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(nil)
+
+	res1, err := testUsecase.RotateToken(context.Background(), token1)
+	assert.NoError(t, err)
+	assert.Equal(t, "grace-access-token-123", res1.AccessToken)
+	assert.NotEmpty(t, res1.RefreshToken)
+
+	res2, err := testUsecase.RotateToken(context.Background(), token1)
+	assert.NoError(t, err)
+	assert.Equal(t, res1.AccessToken, res2.AccessToken)
+	assert.Equal(t, res1.RefreshToken, res2.RefreshToken)
 }

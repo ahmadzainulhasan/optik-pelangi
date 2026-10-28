@@ -1,10 +1,14 @@
 <script lang="ts">
+	import { setContext } from 'svelte';
 	import type { LayoutProps } from './$types';
 	import AppHeader from '#lib/components/custom/AppHeader.svelte';
 	import AppSidebar from '#lib/components/custom/AppSidebar.svelte';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 
-	let { children }: LayoutProps = $props();
+	let { data, children }: LayoutProps = $props();
+
+	// svelte-ignore state_referenced_locally
+	setContext('user', data.user);
 </script>
 
 <Sidebar.Provider>

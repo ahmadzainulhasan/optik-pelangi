@@ -1,6 +1,12 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
+	import * as Avatar from '#lib/components/ui/avatar/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
+	import type { User } from '#lib/types/user.js';
+	import { getInitials } from '#lib/utils.js';
+
+	const user = getContext<User | null>('user');
 </script>
 
 <header
@@ -13,6 +19,13 @@
 	</div>
 
 	<div class="hidden md:block">
-		<Button href="/auth/login">Masuk</Button>
+		{#if user}
+			<Avatar.Root>
+				<Avatar.Image src={user.picture} alt={user.name} />
+				<Avatar.Fallback>{getInitials(user.name)}</Avatar.Fallback>
+			</Avatar.Root>
+		{:else}
+			<Button href="/auth/login">Masuk</Button>
+		{/if}
 	</div>
 </header>

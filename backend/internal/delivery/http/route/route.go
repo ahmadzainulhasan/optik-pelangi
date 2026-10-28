@@ -16,6 +16,7 @@ func (config *RouteConfig) Setup() {
 	auth := config.App.Group("/auth")
 	auth.Get("/login", config.AuthHandler.GoogleLogin)
 	auth.Get("/callback", config.AuthHandler.GoogleCallback)
+	auth.Post("/refresh", config.AuthHandler.RefreshToken)
 
 	user := config.App.Group("/users")
 	user.Get("/current", config.AuthMiddleware, config.UserHandler.GetCurrent)
