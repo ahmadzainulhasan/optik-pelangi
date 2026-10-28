@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/model"
@@ -122,5 +123,33 @@ func (handler *AuthHandlerImpl) RefreshToken(c fiber.Ctx) error {
 		Data: model.LoginResponse{
 			AccessToken: authResponse.AccessToken,
 		},
+	})
+}
+
+func (handler *AuthHandlerImpl) Logout(c fiber.Ctx) error {
+	defer func() {
+		c.Cookie(&fiber.Cookie{
+			Name:     "refresh_token",
+			Expires:  fasthttp.CookieExpireDelete,
+			HTTPOnly: true,
+			Secure:   true,
+			SameSite: fiber.CookieSameSiteStrictMode,
+			Path:     "/auth",
+		})
+	}()
+
+	refreshToken := c.Cookies("refresh_token")
+	var accessToken string
+	authHeader := c.Get("Authorization")
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		accessToken = strings.TrimPrefix(authHeader, "Bearer ")
+	}
+
+	if err := handler.authUsecase.Logout(c.Context(), refreshToken, accessToken); err != nil {
+		return err
+	}
+
+	return c.JSON(model.WebResponse[string]{
+		Data: "OK",
 	})
 }

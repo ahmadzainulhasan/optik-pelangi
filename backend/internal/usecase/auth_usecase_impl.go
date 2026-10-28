@@ -212,3 +212,22 @@ func (usecase *AuthUsecaseImpl) RotateToken(ctx context.Context, refreshToken st
 
 	return authResponse, nil
 }
+
+func (usecase *AuthUsecaseImpl) Logout(ctx context.Context, refreshToken string, accessToken string) error {
+	if accessToken != "" {
+		_ = usecase.redis.Del(ctx, accessToken).Err()
+	}
+
+	if refreshToken != "" {
+		_ = usecase.redis.Del(ctx, refreshToken).Err()
+		err := usecase.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			return usecase.refreshTokenRepository.DeleteByToken(tx, refreshToken)
+		})
+		if err != nil {
+			usecase.log.Error().Err(err).Msg("Failed to delete refresh token from database")
+			return err
+		}
+	}
+
+	return nil
+}

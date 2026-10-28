@@ -703,3 +703,120 @@ func TestRefreshTokenGracePeriodFromRedis(t *testing.T) {
 	assert.Equal(t, res1.AccessToken, res2.AccessToken)
 	assert.Equal(t, res1.RefreshToken, res2.RefreshToken)
 }
+
+func TestLogoutSuccess(t *testing.T) {
+	refreshToken := "e4d909c2-9012-49e8-b769-3c9f2d123456"
+	mockRefreshTokenRepo.Mock.On("DeleteByToken", mock.Anything, refreshToken).Return(nil)
+
+	request := httptest.NewRequest(fiber.MethodDelete, "/auth/logout", nil)
+	request.Header.Set("Cookie", "refresh_token="+refreshToken)
+	request.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjM2IwZjVlMS04ZjRiLTRiMmEtOWUxYS01ZjhkMmIzYzRkNWUiLCJleHAiOjE3NjAxNDQwMDB9.kK2M4NpXQyT8wZv5oP1aLmN3qRtUvY2jXk0W-9vUfxl")
+	response, err := app.Test(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
+
+	bodyBytes, err := io.ReadAll(response.Body)
+	assert.NoError(t, err)
+
+	var webResponse model.WebResponse[string]
+	err = json.Unmarshal(bodyBytes, &webResponse)
+	assert.NoError(t, err)
+	assert.Equal(t, "OK", webResponse.Data)
+
+	var refreshTokenCookie *http.Cookie
+	for _, c := range response.Cookies() {
+		if c.Name == "refresh_token" {
+			refreshTokenCookie = c
+			break
+		}
+	}
+
+	assert.NotNil(t, refreshTokenCookie)
+	assert.Equal(t, "", refreshTokenCookie.Value)
+	assert.Equal(t, "/auth", refreshTokenCookie.Path)
+	assert.True(t, refreshTokenCookie.HttpOnly)
+	assert.True(t, refreshTokenCookie.Secure)
+	assert.Equal(t, http.SameSiteStrictMode, refreshTokenCookie.SameSite)
+}
+
+func TestLogoutSuccessNoTokens(t *testing.T) {
+	request := httptest.NewRequest(fiber.MethodDelete, "/auth/logout", nil)
+	response, err := app.Test(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
+
+	bodyBytes, err := io.ReadAll(response.Body)
+	assert.NoError(t, err)
+
+	var webResponse model.WebResponse[string]
+	err = json.Unmarshal(bodyBytes, &webResponse)
+	assert.NoError(t, err)
+	assert.Equal(t, "OK", webResponse.Data)
+
+	var refreshTokenCookie *http.Cookie
+	for _, c := range response.Cookies() {
+		if c.Name == "refresh_token" {
+			refreshTokenCookie = c
+			break
+		}
+	}
+
+	assert.NotNil(t, refreshTokenCookie)
+	assert.Equal(t, "", refreshTokenCookie.Value)
+	assert.Equal(t, "/auth", refreshTokenCookie.Path)
+}
+
+func TestLogoutSuccessOnlyBearerToken(t *testing.T) {
+	request := httptest.NewRequest(fiber.MethodDelete, "/auth/logout", nil)
+	request.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiNWYwZDNhMS1kZWIzLTQzNmQtOTYyMS02YzM1NWI3MjMwMWEiLCJleHAiOjE3NjAxNDQwMDB9.W-9vUfxlGk4_dK2M4NpXQyT8wZv5oP1aLmN3qRtUvY2")
+	response, err := app.Test(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
+
+	bodyBytes, err := io.ReadAll(response.Body)
+	assert.NoError(t, err)
+
+	var webResponse model.WebResponse[string]
+	err = json.Unmarshal(bodyBytes, &webResponse)
+	assert.NoError(t, err)
+	assert.Equal(t, "OK", webResponse.Data)
+
+	var refreshTokenCookie *http.Cookie
+	for _, c := range response.Cookies() {
+		if c.Name == "refresh_token" {
+			refreshTokenCookie = c
+			break
+		}
+	}
+
+	assert.NotNil(t, refreshTokenCookie)
+	assert.Equal(t, "", refreshTokenCookie.Value)
+	assert.Equal(t, "/auth", refreshTokenCookie.Path)
+}
+
+func TestLogoutDatabaseError(t *testing.T) {
+	refreshToken := "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+	mockRefreshTokenRepo.Mock.On("DeleteByToken", mock.Anything, refreshToken).Return(errors.New("connection reset by peer"))
+
+	request := httptest.NewRequest(fiber.MethodDelete, "/auth/logout", nil)
+	request.Header.Set("Cookie", "refresh_token="+refreshToken)
+	response, err := app.Test(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusInternalServerError, response.StatusCode)
+
+	var refreshTokenCookie *http.Cookie
+	for _, c := range response.Cookies() {
+		if c.Name == "refresh_token" {
+			refreshTokenCookie = c
+			break
+		}
+	}
+
+	assert.NotNil(t, refreshTokenCookie)
+	assert.Equal(t, "", refreshTokenCookie.Value)
+	assert.Equal(t, "/auth", refreshTokenCookie.Path)
+}
