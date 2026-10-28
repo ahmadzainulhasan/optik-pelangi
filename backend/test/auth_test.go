@@ -34,12 +34,12 @@ func TestGoogleLogin(t *testing.T) {
 	assert.Equal(t, "https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=718293847561-abcd1234efgh5678.apps.googleusercontent.com&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fapi%2Fauth%2Fcallback&response_type=code&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&state=state-token", response.Header.Get("Location"))
 	assert.Len(t, response.Cookies(), 2)
 	assert.Equal(t, "oauth_state", response.Cookies()[0].Name)
-	assert.Equal(t, "/", response.Cookies()[0].Path)
+	assert.Equal(t, "/auth/callback", response.Cookies()[0].Path)
 	assert.Equal(t, http.SameSiteLaxMode, response.Cookies()[0].SameSite)
 	assert.True(t, response.Cookies()[0].HttpOnly)
 	assert.True(t, response.Cookies()[0].Secure)
 	assert.Equal(t, "pkce_verifier", response.Cookies()[1].Name)
-	assert.Equal(t, "/", response.Cookies()[1].Path)
+	assert.Equal(t, "/auth/callback", response.Cookies()[1].Path)
 	assert.Equal(t, http.SameSiteLaxMode, response.Cookies()[1].SameSite)
 	assert.True(t, response.Cookies()[1].HttpOnly)
 	assert.True(t, response.Cookies()[1].Secure)
@@ -96,9 +96,11 @@ func TestGoogleCallbackSuccessNewUser(t *testing.T) {
 
 	assert.NotNil(t, stateCookie)
 	assert.Equal(t, "", stateCookie.Value)
+	assert.Equal(t, "/auth/callback", stateCookie.Path)
 
 	assert.NotNil(t, verifierCookie)
 	assert.Equal(t, "", verifierCookie.Value)
+	assert.Equal(t, "/auth/callback", verifierCookie.Path)
 }
 
 func TestGoogleCallbackSuccessExistingUser(t *testing.T) {
@@ -159,9 +161,11 @@ func TestGoogleCallbackSuccessExistingUser(t *testing.T) {
 
 	assert.NotNil(t, stateCookie)
 	assert.Equal(t, "", stateCookie.Value)
+	assert.Equal(t, "/auth/callback", stateCookie.Path)
 
 	assert.NotNil(t, verifierCookie)
 	assert.Equal(t, "", verifierCookie.Value)
+	assert.Equal(t, "/auth/callback", verifierCookie.Path)
 }
 
 func TestGoogleCallbackStateMismatch(t *testing.T) {

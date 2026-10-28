@@ -8,6 +8,7 @@ import (
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/usecase"
 	"github.com/gofiber/fiber/v3"
 	"github.com/spf13/viper"
+	"github.com/valyala/fasthttp"
 )
 
 type AuthHandlerImpl struct {
@@ -25,7 +26,7 @@ func NewAuthHandlerImpl(authUsecase usecase.AuthUsecase, viper *viper.Viper) *Au
 func (handler *AuthHandlerImpl) GoogleLogin(c fiber.Ctx) error {
 	loginResult, err := handler.authUsecase.GetGoogleLogin()
 	if err != nil {
-		return fiber.ErrInternalServerError
+		return err
 	}
 
 	c.Cookie(&fiber.Cookie{
@@ -35,7 +36,7 @@ func (handler *AuthHandlerImpl) GoogleLogin(c fiber.Ctx) error {
 		HTTPOnly: true,
 		Secure:   true,
 		SameSite: fiber.CookieSameSiteLaxMode,
-		Path:     "/",
+		Path:     "/auth/callback",
 	})
 
 	c.Cookie(&fiber.Cookie{
@@ -45,14 +46,31 @@ func (handler *AuthHandlerImpl) GoogleLogin(c fiber.Ctx) error {
 		HTTPOnly: true,
 		Secure:   true,
 		SameSite: fiber.CookieSameSiteLaxMode,
-		Path:     "/",
+		Path:     "/auth/callback",
 	})
 
 	return c.Redirect().To(loginResult.URL)
 }
 
 func (handler *AuthHandlerImpl) GoogleCallback(c fiber.Ctx) error {
-	defer c.ClearCookie("oauth_state", "pkce_verifier")
+	defer func() {
+		c.Cookie(&fiber.Cookie{
+			Name:     "oauth_state",
+			Expires:  fasthttp.CookieExpireDelete,
+			HTTPOnly: true,
+			Secure:   true,
+			SameSite: fiber.CookieSameSiteLaxMode,
+			Path:     "/auth/callback",
+		})
+		c.Cookie(&fiber.Cookie{
+			Name:     "pkce_verifier",
+			Expires:  fasthttp.CookieExpireDelete,
+			HTTPOnly: true,
+			Secure:   true,
+			SameSite: fiber.CookieSameSiteLaxMode,
+			Path:     "/auth/callback",
+		})
+	}()
 
 	var request model.GoogleCallbackRequest
 	if err := c.Bind().All(&request); err != nil {

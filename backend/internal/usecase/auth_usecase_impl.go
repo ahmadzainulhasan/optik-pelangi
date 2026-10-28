@@ -59,14 +59,14 @@ func (usecase *AuthUsecaseImpl) GetGoogleLogin() (model.GoogleLoginResult, error
 	stateBytes := make([]byte, 32)
 	if _, err := rand.Read(stateBytes); err != nil {
 		usecase.log.Error().Err(err).Msg("Failed to generate oauth state")
-		return model.GoogleLoginResult{}, err
+		return model.GoogleLoginResult{}, fiber.ErrInternalServerError
 	}
 	state := base64.RawURLEncoding.EncodeToString(stateBytes)
 
 	verifierBytes := make([]byte, 32)
 	if _, err := rand.Read(verifierBytes); err != nil {
 		usecase.log.Error().Err(err).Msg("Failed to generate pkce verifier")
-		return model.GoogleLoginResult{}, err
+		return model.GoogleLoginResult{}, fiber.ErrInternalServerError
 	}
 	verifier := base64.RawURLEncoding.EncodeToString(verifierBytes)
 
