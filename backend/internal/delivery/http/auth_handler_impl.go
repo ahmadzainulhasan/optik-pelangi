@@ -145,9 +145,7 @@ func (handler *AuthHandlerImpl) Logout(c fiber.Ctx) error {
 		accessToken = strings.TrimPrefix(authHeader, "Bearer ")
 	}
 
-	if err := handler.authUsecase.Logout(c.Context(), refreshToken, accessToken); err != nil {
-		return err
-	}
+	handler.authUsecase.Logout(c.Context(), refreshToken, accessToken)
 
 	return c.JSON(model.WebResponse[string]{
 		Data: "OK",

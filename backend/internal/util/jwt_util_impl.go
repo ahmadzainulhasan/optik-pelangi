@@ -29,7 +29,7 @@ func (util *JwtUtilImpl) GenerateAccessToken(ctx context.Context, user entity.Us
 		"email":   user.Email,
 		"name":    user.Name,
 		"picture": user.Picture,
-		"exp":     time.Now().Add(60 * time.Minute).UnixMilli(),
+		"exp":     time.Now().Add(15 * time.Minute).UnixMilli(),
 	})
 
 	accessToken, err := token.SignedString([]byte(util.viper.GetString("JWT_SECRET")))
@@ -37,7 +37,7 @@ func (util *JwtUtilImpl) GenerateAccessToken(ctx context.Context, user entity.Us
 		return "", err
 	}
 
-	if err := util.redis.Set(ctx, accessToken, user.ID, 60*time.Minute).Err(); err != nil {
+	if err := util.redis.Set(ctx, accessToken, user.ID, 15*time.Minute).Err(); err != nil {
 		return "", err
 	}
 

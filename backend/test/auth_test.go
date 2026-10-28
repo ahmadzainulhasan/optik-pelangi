@@ -511,6 +511,7 @@ func TestRefreshTokenSuccess(t *testing.T) {
 
 	request := httptest.NewRequest(fiber.MethodPost, "/auth/refresh", nil)
 	request.Header.Set("Cookie", "refresh_token=c4b8e21a-7f39-4d65-8b12-9e8c3a1f4b5d")
+	request.Header.Set("Authorization", "Bearer old-access-token-to-revoke-12345")
 	response, err := app.Test(request)
 
 	assert.NoError(t, err)
@@ -741,6 +742,8 @@ func TestLogoutSuccess(t *testing.T) {
 }
 
 func TestLogoutSuccessNoTokens(t *testing.T) {
+	mockRefreshTokenRepo.Mock.On("DeleteByToken", mock.Anything, "").Return(nil)
+
 	request := httptest.NewRequest(fiber.MethodDelete, "/auth/logout", nil)
 	response, err := app.Test(request)
 
@@ -769,6 +772,8 @@ func TestLogoutSuccessNoTokens(t *testing.T) {
 }
 
 func TestLogoutSuccessOnlyBearerToken(t *testing.T) {
+	mockRefreshTokenRepo.Mock.On("DeleteByToken", mock.Anything, "").Return(nil)
+
 	request := httptest.NewRequest(fiber.MethodDelete, "/auth/logout", nil)
 	request.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiNWYwZDNhMS1kZWIzLTQzNmQtOTYyMS02YzM1NWI3MjMwMWEiLCJleHAiOjE3NjAxNDQwMDB9.W-9vUfxlGk4_dK2M4NpXQyT8wZv5oP1aLmN3qRtUvY2")
 	response, err := app.Test(request)
@@ -806,7 +811,15 @@ func TestLogoutDatabaseError(t *testing.T) {
 	response, err := app.Test(request)
 
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusInternalServerError, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
+
+	bodyBytes, err := io.ReadAll(response.Body)
+	assert.NoError(t, err)
+
+	var webResponse model.WebResponse[string]
+	err = json.Unmarshal(bodyBytes, &webResponse)
+	assert.NoError(t, err)
+	assert.Equal(t, "OK", webResponse.Data)
 
 	var refreshTokenCookie *http.Cookie
 	for _, c := range response.Cookies() {

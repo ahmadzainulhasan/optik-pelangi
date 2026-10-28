@@ -10,5 +10,5 @@ type AuthUsecase interface {
 	GetGoogleLogin() (model.GoogleLoginResult, error)
 	ProcessGoogleCallback(ctx context.Context, request model.GoogleCallbackRequest) (model.AuthResponse, error)
 	RotateToken(ctx context.Context, refreshToken string) (model.AuthResponse, error)
-	Logout(ctx context.Context, refreshToken string, accessToken string) error
+	Logout(ctx context.Context, refreshToken string, accessToken string)
 }
