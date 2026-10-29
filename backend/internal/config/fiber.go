@@ -1,6 +1,8 @@
 package config
 
 import (
+	"errors"
+
 	"github.com/ahmadzainulhasan/optik-pelangi/backend/internal/model"
 	"github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
@@ -13,13 +15,15 @@ import (
 func NewErrorHandler(translator ut.Translator) fiber.ErrorHandler {
 	return func(c fiber.Ctx, err error) error {
 
-		if fiberError, ok := err.(*fiber.Error); ok {
+		var fiberError *fiber.Error
+		if errors.As(err, &fiberError) {
 			return c.Status(fiberError.Code).JSON(model.WebResponse[string]{
 				Errors: fiberError.Message,
 			})
 		}
 
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+		var validationErrors validator.ValidationErrors
+		if errors.As(err, &validationErrors) {
 			messages := make(map[string]string)
 			for _, fieldError := range validationErrors {
 				messages[fieldError.Field()] = fieldError.Translate(translator)
