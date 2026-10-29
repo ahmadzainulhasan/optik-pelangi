@@ -26,9 +26,7 @@ func NewJwtUtilImpl(redis *redis.Client, viper *viper.Viper) *JwtUtilImpl {
 func (util *JwtUtilImpl) GenerateAccessToken(ctx context.Context, user entity.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.ID,
-		"email":   user.Email,
-		"name":    user.Name,
-		"picture": user.Picture,
+		"role":    user.Role,
 		"exp":     time.Now().Add(15 * time.Minute).UnixMilli(),
 	})
 

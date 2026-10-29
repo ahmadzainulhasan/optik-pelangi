@@ -1,13 +1,16 @@
 import { API_ORIGIN } from '$app/env/public';
 import type { PageLoad } from './$types';
 import { goto } from '$app/navigation';
+import type { WebResponse } from '#lib/types/api';
+import type { LoginResponse } from '#lib/types/auth';
+import type { User } from '#lib/types/user';
 
 export const ssr = false;
 export const csr = true;
 
 export const load: PageLoad = async ({ fetch, url }) => {
 	try {
-		const response = await fetch(`${API_ORIGIN}/auth/callback${url.search}`, {
+		const response: Response = await fetch(`${API_ORIGIN}/auth/callback${url.search}`, {
 			method: 'GET',
 			credentials: 'include',
 			headers: {
@@ -15,12 +18,26 @@ export const load: PageLoad = async ({ fetch, url }) => {
 			}
 		});
 		if (response.ok) {
-			goto('/');
+			const result: WebResponse<LoginResponse> = await response.json();
+			const userResponse: Response = await fetch(`${API_ORIGIN}/users/current`, {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${result.data.accessToken}`,
+					Accept: 'application/json'
+				}
+			});
+			const userResult: WebResponse<User> = await userResponse.json();
+
+			if (userResult.data.role === 'admin') {
+				goto('/admin');
+			} else {
+				goto('/');
+			}
 		}
 
 		if (response.status >= 500) {
-			const result = await response.json();
-			goto(`/auth/login?error=${encodeURIComponent(result.errors)}`);
+			const result: WebResponse<unknown> = await response.json();
+			goto(`/auth/login?error=${encodeURIComponent(result.errors ?? '')}`);
 		}
 
 		if (response.status >= 400) {

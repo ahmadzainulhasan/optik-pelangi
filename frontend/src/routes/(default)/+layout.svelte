@@ -7,7 +7,6 @@
 
 	let { data, children }: LayoutProps = $props();
 
-	// svelte-ignore state_referenced_locally
 	setContext('user', data.user);
 </script>
 

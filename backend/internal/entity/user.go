@@ -8,6 +8,7 @@ type User struct {
 	Email     string    `gorm:"column:email;type:text;unique;not null"`
 	GoogleID  string    `gorm:"column:google_id;type:text;unique"`
 	Picture   string    `gorm:"column:picture;type:text"`
+	Role      string    `gorm:"column:role;type:text;not null;default:customer"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
 }
