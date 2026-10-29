@@ -1,6 +1,6 @@
 import { API_ORIGIN } from '$app/env/public';
 import type { LayoutLoad } from './$types';
-import type { User } from '$lib/types/user';
+import type { User } from '#lib/types/user';
 
 export const ssr = false;
 

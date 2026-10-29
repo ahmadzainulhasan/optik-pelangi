@@ -4,7 +4,7 @@
 	import { page } from '$app/state';
 	import { API_ORIGIN } from '$app/env/public';
 	import { Button } from '#lib/components/ui/button/index.js';
-	import * as Alert from '$lib/components/ui/alert/index.js';
+	import * as Alert from '#lib/components/ui/alert/index.js';
 
 	const errorMessage = page.url.searchParams.get('error');
 

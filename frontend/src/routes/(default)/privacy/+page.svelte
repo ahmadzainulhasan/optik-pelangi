@@ -12,7 +12,7 @@
 <main class="min-h-screen bg-background pb-20">
 	<header class="bg-muted py-14 md:py-24">
 		<div class="container mx-auto px-4 text-center md:px-6">
-			<h1 class="font-serif text-4xl text-foreground md:text-5xl lg:text-6xl">
+			<h1 class="font-serif text-4xl md:text-5xl lg:text-6xl">
 				{data.title}
 			</h1>
 			<p class="mt-4 text-sm text-muted-foreground md:text-base">
@@ -25,7 +25,7 @@
 		<article class="prose max-w-none prose-gray dark:prose-invert">
 			{#each data.sections as section, i}
 				<div class="mb-8">
-					<h2 class="font-serif text-2xl font-medium text-foreground">{section.title}</h2>
+					<h2 class="font-serif text-2xl font-medium">{section.title}</h2>
 					<div class="mt-4 flex flex-col gap-3 text-muted-foreground">
 						{#each section.content as paragraph}
 							<p class="leading-relaxed">{paragraph}</p>
