@@ -53,7 +53,10 @@ func (util *JwtUtilImpl) ValidateToken(ctx context.Context, accessToken string) 
 		return nil, fiber.ErrUnauthorized
 	}
 
-	claims := token.Claims.(jwt.MapClaims)
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return nil, fiber.ErrUnauthorized
+	}
 	if int64(claims["exp"].(float64)) < time.Now().UnixMilli() {
 		return nil, fiber.ErrUnauthorized
 	}

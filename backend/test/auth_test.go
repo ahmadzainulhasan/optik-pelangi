@@ -55,9 +55,15 @@ func TestGoogleCallbackSuccessNewUser(t *testing.T) {
 
 	mockOAuthClient.Mock.On("GetUserInfo", mock.Anything, "4/0AWgavTe-real_code_new_user_xyz123", "valid-verifier-secret-1234567890").Return(userInfo, nil)
 	mockUserRepo.Mock.On("FindByEmail", mock.Anything, userInfo.Email).Return(entity.User{}, gorm.ErrRecordNotFound)
-	mockUserRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
-	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, mock.Anything).Return("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiNWYwZDNhMS1kZWIzLTQzNmQtOTYyMS02YzM1NWI3MjMwMWEiLCJlbWFpbCI6ImJ1ZGkuc2FudG9zb0BnbWFpbC5jb20iLCJleHAiOjE3NjAxNDQwMDB9.W-9vUfxlGk4_dK2M4NpXQyT8wZv5oP1aLmN3qRtUvY2", nil).Once()
-	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+	mockUserRepo.Mock.On("Save", mock.Anything, mock.MatchedBy(func(u entity.User) bool {
+		return u.Email == "budi.santoso@gmail.com"
+	})).Return(nil)
+	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, mock.MatchedBy(func(u entity.User) bool {
+		return u.Email == "budi.santoso@gmail.com"
+	})).Return("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiNWYwZDNhMS1kZWIzLTQzNmQtOTYyMS02YzM1NWI3MjMwMWEiLCJlbWFpbCI6ImJ1ZGkuc2FudG9zb0BnbWFpbC5jb20iLCJleHAiOjE3NjAxNDQwMDB9.W-9vUfxlGk4_dK2M4NpXQyT8wZv5oP1aLmN3qRtUvY2", nil)
+	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.MatchedBy(func(t entity.RefreshToken) bool {
+		return t.UserID != "" && t.UserID != "c3b0f5e1-8f4b-4b2a-9e1a-5f8d2b3c4d5e" && t.UserID != "e5d2b7a3-0b6d-4d4c-9a3c-7b0f4d5e6f7a" && t.ID != "4c5d6e7f-8a9b-4c0d-1e2f-3a4b5c6d7e8f" && t.ID != "8b3f124c-9f8e-4a62-b91c-7d5a3e1b0c24" && t.ID != "5d6e7f8a-9b0c-4d1e-2f3a-4b5c6d7e8f9a"
+	})).Return(nil)
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback?code=4/0AWgavTe-real_code_new_user_xyz123&state=valid-state-secret-1234567890", nil)
 	request.Header.Set("Cookie", "oauth_state=valid-state-secret-1234567890; pkce_verifier=valid-verifier-secret-1234567890")
@@ -122,7 +128,9 @@ func TestGoogleCallbackSuccessExistingUser(t *testing.T) {
 	mockUserRepo.Mock.On("FindByEmail", mock.Anything, userInfo.Email).Return(user, nil)
 	mockUserRepo.Mock.On("Save", mock.Anything, user).Return(nil)
 	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, user).Return("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjM2IwZjVlMS04ZjRiLTRiMmEtOWUxYS01ZjhkMmIzYzRkNWUiLCJlbWFpbCI6InNpdGkuYW1pbmFoQGdtYWlsLmNvbSIsImV4cCI6MTc2MDE0NDAwMH0.kK2M4NpXQyT8wZv5oP1aLmN3qRtUvY2jXk0W-9vUfxl", nil)
-	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.MatchedBy(func(t entity.RefreshToken) bool {
+		return t.UserID == "c3b0f5e1-8f4b-4b2a-9e1a-5f8d2b3c4d5e"
+	})).Return(nil)
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback?code=4/0AWgavTf-real_code_existing_user_abc456&state=valid-state-secret-1234567890", nil)
 	request.Header.Set("Cookie", "oauth_state=valid-state-secret-1234567890; pkce_verifier=valid-verifier-secret-1234567890")
@@ -361,7 +369,9 @@ func TestGoogleCallbackDatabaseErrorSaveNewUser(t *testing.T) {
 
 	mockOAuthClient.Mock.On("GetUserInfo", mock.Anything, "4/0AWgavTi-real_code_save_new_err_111", "valid-verifier-secret-1234567890").Return(userInfo, nil)
 	mockUserRepo.Mock.On("FindByEmail", mock.Anything, userInfo.Email).Return(entity.User{}, gorm.ErrRecordNotFound)
-	mockUserRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(gorm.ErrDuplicatedKey).Once()
+	mockUserRepo.Mock.On("Save", mock.Anything, mock.MatchedBy(func(u entity.User) bool {
+		return u.Email == "dewi.lestari@gmail.com"
+	})).Return(gorm.ErrDuplicatedKey)
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback?code=4/0AWgavTi-real_code_save_new_err_111&state=valid-state-secret-1234567890", nil)
 	request.Header.Set("Cookie", "oauth_state=valid-state-secret-1234567890; pkce_verifier=valid-verifier-secret-1234567890")
@@ -470,7 +480,9 @@ func TestGoogleCallbackDatabaseErrorSaveRefreshToken(t *testing.T) {
 	mockUserRepo.Mock.On("FindByEmail", mock.Anything, userInfo.Email).Return(user, nil)
 	mockUserRepo.Mock.On("Save", mock.Anything, user).Return(nil)
 	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, user).Return("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlNWQyYjdhMy0wYjZkLTRkNGMtOWEzYy03YjBmNGQ1ZTZmN2EiLCJlbWFpbCI6InJpemt5LnByYXRhbWFAZ21haWwuY29tIiwiZXhwIjoxNzYwMTQ0MDAwfQ.v5oP1aLmN3qRtUvY2jXk0W-9vUfxlGk4_dK2M4NpXQy", nil)
-	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(gorm.ErrInvalidData).Once()
+	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.MatchedBy(func(t entity.RefreshToken) bool {
+		return t.UserID == "e5d2b7a3-0b6d-4d4c-9a3c-7b0f4d5e6f7a"
+	})).Return(gorm.ErrInvalidData)
 
 	request := httptest.NewRequest(fiber.MethodGet, "/auth/callback?code=4/0AWgavTl-real_code_token_save_err_444&state=valid-state-secret-1234567890", nil)
 	request.Header.Set("Cookie", "oauth_state=valid-state-secret-1234567890; pkce_verifier=valid-verifier-secret-1234567890")
@@ -507,7 +519,9 @@ func TestRefreshTokenSuccess(t *testing.T) {
 	mockRefreshTokenRepo.Mock.On("FindByToken", mock.Anything, "c4b8e21a-7f39-4d65-8b12-9e8c3a1f4b5d").Return(refreshToken, nil)
 	mockUserRepo.Mock.On("FindByID", mock.Anything, user.ID).Return(user, nil)
 	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, user).Return("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMWIyYzNkNC1lNWY2LTRhMWItOGMyZC0zZTRmNWE2YjdjOGQiLCJlbWFpbCI6InNpdGkucmFobWF3YXRpQGdtYWlsLmNvbSIsImV4cCI6MTc2MDE0NDAwMH0.qRtUvY2jXk1i7Qx9pZkK2M4NpXQyT8wZvwN5yP8xLm0", nil)
-	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.MatchedBy(func(t entity.RefreshToken) bool {
+		return t.UserID == "a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d"
+	})).Return(nil)
 
 	request := httptest.NewRequest(fiber.MethodPost, "/auth/refresh", nil)
 	request.Header.Set("Cookie", "refresh_token=c4b8e21a-7f39-4d65-8b12-9e8c3a1f4b5d")
@@ -650,7 +664,9 @@ func TestRefreshTokenDatabaseErrorSaveNewToken(t *testing.T) {
 	mockRefreshTokenRepo.Mock.On("FindByToken", mock.Anything, "f8a9b0c1-d2e3-4f0a-8b1c-2d3e4f5a6b7c").Return(refreshToken, nil)
 	mockUserRepo.Mock.On("FindByID", mock.Anything, user.ID).Return(user, nil)
 	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, user).Return("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmNmExYjJjMy00ZDRlLWJmNWEtNmI3Yy04ZDllMGYxYTJiM2MiLCJlbWFpbCI6ImJheXUud2ljYWtzb25vQGdtYWlsLmNvbSIsImV4cCI6MTc2MDE0NDAwMH0.i7Qx9pZkK2M4NpXQyT8wZvwN5yP8xLm0qRtUvY2jXk1", nil)
-	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(errors.New("db save failed")).Once()
+	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.MatchedBy(func(t entity.RefreshToken) bool {
+		return t.ID == "4c5d6e7f-8a9b-4c0d-1e2f-3a4b5c6d7e8f"
+	})).Return(errors.New("db save failed"))
 
 	request := httptest.NewRequest(fiber.MethodPost, "/auth/refresh", nil)
 	request.Header.Set("Cookie", "refresh_token=f8a9b0c1-d2e3-4f0a-8b1c-2d3e4f5a6b7c")
@@ -682,7 +698,7 @@ func TestRefreshTokenGracePeriodFromRedis(t *testing.T) {
 		Email: "grace.period@gmail.com",
 	}
 
-	token1 := uuid.New().String()
+	token1 := uuid.Must(uuid.NewV7()).String()
 	refreshToken := entity.RefreshToken{
 		ID:        "5d6e7f8a-9b0c-4d1e-2f3a-4b5c6d7e8f9a",
 		UserID:    user.ID,
@@ -692,7 +708,9 @@ func TestRefreshTokenGracePeriodFromRedis(t *testing.T) {
 	mockRefreshTokenRepo.Mock.On("FindByToken", mock.Anything, token1).Return(refreshToken, nil)
 	mockUserRepo.Mock.On("FindByID", mock.Anything, user.ID).Return(user, nil)
 	mockJwtUtil.Mock.On("GenerateAccessToken", mock.Anything, user).Return("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMWIyYzNkNC1lNWY2LTc4OTAtYWJjZC1lZjEyMzQ1Njc4OTAiLCJlbWFpbCI6ImdyYWNlLnBlcmlvZEBnbWFpbC5jb20iLCJleHAiOjE3NjAxNDQwMDB9.wZvwN5yP8xLm0qRtUvY2jXk1i7Qx9pZkK2M4NpXQyT8", nil)
-	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+	mockRefreshTokenRepo.Mock.On("Save", mock.Anything, mock.MatchedBy(func(t entity.RefreshToken) bool {
+		return t.UserID == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+	})).Return(nil)
 
 	res1, err := testUsecase.RotateToken(context.Background(), token1)
 	assert.NoError(t, err)

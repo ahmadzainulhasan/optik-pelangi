@@ -99,7 +99,7 @@ func (usecase *AuthUsecaseImpl) ProcessGoogleCallback(ctx context.Context, reque
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				user = entity.User{
-					ID:       uuid.New().String(),
+					ID:       uuid.Must(uuid.NewV7()).String(),
 					Email:    userInfo.Email,
 					Name:     userInfo.Name,
 					GoogleID: userInfo.ID,
@@ -129,9 +129,9 @@ func (usecase *AuthUsecaseImpl) ProcessGoogleCallback(ctx context.Context, reque
 			return err
 		}
 
-		authResponse.RefreshToken = uuid.New().String()
+		authResponse.RefreshToken = uuid.Must(uuid.NewV7()).String()
 		if err := usecase.refreshTokenRepository.Save(tx, entity.RefreshToken{
-			ID:        uuid.New().String(),
+			ID:        uuid.Must(uuid.NewV7()).String(),
 			UserID:    user.ID,
 			Token:     authResponse.RefreshToken,
 			ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
@@ -190,7 +190,7 @@ func (usecase *AuthUsecaseImpl) RotateToken(ctx context.Context, refreshToken st
 			return err
 		}
 
-		authResponse.RefreshToken = uuid.New().String()
+		authResponse.RefreshToken = uuid.Must(uuid.NewV7()).String()
 		tokenEntity.Token = authResponse.RefreshToken
 		tokenEntity.ExpiresAt = time.Now().Add(7 * 24 * time.Hour)
 		if err := usecase.refreshTokenRepository.Save(tx, tokenEntity); err != nil {
