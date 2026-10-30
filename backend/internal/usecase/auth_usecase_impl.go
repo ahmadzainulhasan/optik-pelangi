@@ -104,6 +104,7 @@ func (usecase *AuthUsecaseImpl) ProcessGoogleCallback(ctx context.Context, reque
 					Name:     userInfo.Name,
 					GoogleID: userInfo.ID,
 					Picture:  userInfo.Picture,
+					Role:     "customer",
 				}
 				if err := usecase.userRepository.Save(tx, user); err != nil {
 					usecase.log.Error().Err(err).Msg("Failed to create new user")

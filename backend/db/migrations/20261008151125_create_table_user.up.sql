@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT NOT NULL UNIQUE,
     google_id TEXT UNIQUE,
     picture TEXT,
+    role TEXT NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'admin')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

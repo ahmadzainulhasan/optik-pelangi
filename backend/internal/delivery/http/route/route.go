@@ -6,10 +6,11 @@ import (
 )
 
 type RouteConfig struct {
-	App            *fiber.App
-	AuthHandler    http.AuthHandler
-	UserHandler    http.UserHandler
-	AuthMiddleware fiber.Handler
+	App             *fiber.App
+	AuthHandler     http.AuthHandler
+	UserHandler     http.UserHandler
+	AuthMiddleware  fiber.Handler
+	AdminMiddleware fiber.Handler
 }
 
 func (config *RouteConfig) Setup() {

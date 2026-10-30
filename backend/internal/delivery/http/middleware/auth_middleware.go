@@ -20,7 +20,8 @@ func NewAuthMiddleware(jwtUtil util.JwtUtil) fiber.Handler {
 			return fiber.ErrUnauthorized
 		}
 
-		c.Locals("claims", claims)
+		c.Locals("userId", claims["user_id"].(string))
+		c.Locals("role", claims["role"].(string))
 		return c.Next()
 	}
 }

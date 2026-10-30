@@ -52,14 +52,16 @@ func init() {
 	)
 	authHandler := http.NewAuthHandlerImpl(authUsecase, viperConfig)
 
-	userUsecase := usecase.NewUserUsecaseImpl()
+	userUsecase := usecase.NewUserUsecaseImpl(db, mockUserRepo)
 	userHandler := http.NewUserHandlerImpl(userUsecase)
 	authMiddleware := middleware.NewAuthMiddleware(mockJwtUtil)
+	adminMiddleware := middleware.NewAdminMiddleware()
 
 	(&route.RouteConfig{
-		App:            app,
-		AuthHandler:    authHandler,
-		UserHandler:    userHandler,
-		AuthMiddleware: authMiddleware,
+		App:             app,
+		AuthHandler:     authHandler,
+		UserHandler:     userHandler,
+		AuthMiddleware:  authMiddleware,
+		AdminMiddleware: adminMiddleware,
 	}).Setup()
 }
