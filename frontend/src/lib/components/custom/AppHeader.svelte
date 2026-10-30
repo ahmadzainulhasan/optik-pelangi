@@ -23,7 +23,7 @@
 </script>
 
 <header
-	class="sticky top-0 z-50 relative flex h-14 w-full items-center justify-center bg-background px-4 md:justify-between"
+	class="sticky top-0 z-50 flex h-14 w-full items-center justify-center bg-background px-4 md:justify-between"
 >
 	<Sidebar.Trigger class="absolute left-4 md:static md:hidden" />
 
