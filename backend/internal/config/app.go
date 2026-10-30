@@ -51,14 +51,16 @@ func Bootstrap(config *BootstrapConfig) {
 	authHandler := http.NewAuthHandlerImpl(authUsecase, config.ViperConfig)
 
 	authMiddleware := middleware.NewAuthMiddleware(jwtUtil)
+	adminMiddleware := middleware.NewAdminMiddleware()
 	userUsecase := usecase.NewUserUsecaseImpl(config.DB, userRepository)
 	userHandler := http.NewUserHandlerImpl(userUsecase)
 
 	routeConfig := route.RouteConfig{
-		App:            config.App,
-		AuthHandler:    authHandler,
-		UserHandler:    userHandler,
-		AuthMiddleware: authMiddleware,
+		App:             config.App,
+		AuthHandler:     authHandler,
+		UserHandler:     userHandler,
+		AuthMiddleware:  authMiddleware,
+		AdminMiddleware: adminMiddleware,
 	}
 	routeConfig.Setup()
 }

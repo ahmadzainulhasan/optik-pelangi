@@ -3,23 +3,14 @@
 	import { API_ORIGIN } from '$app/env/public';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 	import * as Avatar from '#lib/components/ui/avatar/index.js';
+	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
+	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import type { User } from '#lib/types/user.js';
 
 	const sidebar = Sidebar.useSidebar();
 	const user = getContext<User | null>('user');
-
-	function getInitials(name?: string): string {
-		if (!name) return '';
-		return name
-			.trim()
-			.split(/\s+/)
-			.map((part) => part[0])
-			.join('')
-			.toUpperCase()
-			.slice(0, 2);
-	}
 
 	async function handleLogout() {
 		sidebar.setOpenMobile(false);
@@ -34,35 +25,44 @@
 	}
 </script>
 
-<Sidebar.Root side="right">
-	<Sidebar.Header>
-		<a href="/" class="px-2 py-4 font-serif text-xl" onclick={() => sidebar.setOpenMobile(false)}>
+<Sidebar.Root side="left" collapsible="offcanvas">
+	<Sidebar.Header class="h-14 justify-center px-4">
+		<a href="/" class="font-serif text-xl" onclick={() => sidebar.setOpenMobile(false)}>
 			Optik Pelangi
 		</a>
 	</Sidebar.Header>
+
 	<Sidebar.Content />
-	<Sidebar.Footer class="space-y-2">
+
+	<Sidebar.Footer>
 		{#if user}
-			<div class="flex items-center gap-3 p-2">
-				<Avatar.Root>
-					<Avatar.Image src={user.picture} alt={user.name} />
-					<Avatar.Fallback>
-						{getInitials(user.name)}
-					</Avatar.Fallback>
-				</Avatar.Root>
-				<div class="flex flex-col">
-					<span class="text-sm font-medium">{user.name}</span>
-					<span class="text-xs text-muted-foreground">{user.email}</span>
-				</div>
-			</div>
-			<Button
-				variant="outline"
-				class="w-full text-destructive hover:bg-destructive/10"
-				onclick={handleLogout}
-			>
-				<LogOutIcon class="size-4" />
-				<span>Keluar</span>
-			</Button>
+			<Sidebar.Menu>
+				<Sidebar.MenuItem>
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger>
+							{#snippet child({ props })}
+								<Sidebar.MenuButton {...props}>
+									<Avatar.Root>
+										<Avatar.Image src={user.picture} alt={user.name} />
+										<Avatar.Fallback />
+									</Avatar.Root>
+									<div class="flex w-full flex-col">
+										<span class="font-medium">{user.name}</span>
+										<span class="text-[10px] text-muted-foreground">{user.email}</span>
+									</div>
+									<ChevronsUpDownIcon />
+								</Sidebar.MenuButton>
+							{/snippet}
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content>
+							<DropdownMenu.Item variant="destructive" onSelect={handleLogout}>
+								<LogOutIcon />
+								<span>Keluar Akun</span>
+							</DropdownMenu.Item>
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
+				</Sidebar.MenuItem>
+			</Sidebar.Menu>
 		{:else}
 			<Button href="/auth/login" class="w-full" onclick={() => sidebar.setOpenMobile(false)}>
 				Masuk

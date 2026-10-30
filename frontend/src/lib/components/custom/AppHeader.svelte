@@ -10,17 +10,6 @@
 
 	const user = getContext<User | null>('user');
 
-	function getInitials(name?: string): string {
-		if (!name) return '';
-		return name
-			.trim()
-			.split(/\s+/)
-			.map((part) => part[0])
-			.join('')
-			.toUpperCase()
-			.slice(0, 2);
-	}
-
 	async function handleLogout() {
 		try {
 			await fetch(`${API_ORIGIN}/auth/logout`, {
@@ -34,13 +23,11 @@
 </script>
 
 <header
-	class="sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b bg-background px-4 md:px-8 lg:px-12"
+	class="sticky top-0 z-50 relative flex h-14 w-full items-center justify-center bg-background px-4 md:justify-between"
 >
-	<a href="/" class="font-serif text-lg font-medium">Optik Pelangi</a>
+	<Sidebar.Trigger class="absolute left-4 md:static md:hidden" />
 
-	<div class="md:hidden">
-		<Sidebar.Trigger />
-	</div>
+	<a href="/" class="font-serif text-xl">Optik Pelangi</a>
 
 	<div class="hidden md:block">
 		{#if user}
@@ -50,8 +37,8 @@
 						<Button {...props} variant="ghost" size="icon" class="rounded-full">
 							<Avatar.Root>
 								<Avatar.Image src={user.picture} alt={user.name} />
-								<Avatar.Fallback>{getInitials(user.name)}</Avatar.Fallback>
-							</Avatar.Root>
+								<Avatar.Fallback />
+                        							</Avatar.Root>
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>
