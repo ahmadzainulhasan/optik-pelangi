@@ -52,7 +52,7 @@ func Bootstrap(config *BootstrapConfig) {
 
 	authMiddleware := middleware.NewAuthMiddleware(jwtUtil)
 	adminMiddleware := middleware.NewAdminMiddleware()
-	userUsecase := usecase.NewUserUsecaseImpl(config.DB, userRepository)
+	userUsecase := usecase.NewUserUsecaseImpl(config.DB, userRepository, config.Log)
 	userHandler := http.NewUserHandlerImpl(userUsecase)
 
 	routeConfig := route.RouteConfig{

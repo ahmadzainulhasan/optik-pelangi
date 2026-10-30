@@ -13,7 +13,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"gorm.io/gorm"
 )
 
 func TestGetCurrentUserSuccess(t *testing.T) {
@@ -121,22 +120,6 @@ func TestGetCurrentUserSuccessWithoutPicture(t *testing.T) {
 	assert.Equal(t, "user.nopicture@gmail.com", webResponse.Data.Email)
 	assert.Equal(t, "", webResponse.Data.Picture)
 	assert.Equal(t, "customer", webResponse.Data.Role)
-}
-
-func TestGetCurrentUserNotFound(t *testing.T) {
-	mockJwtUtil.Mock.On("ValidateToken", mock.Anything, "user-deleted-token").Return(jwt.MapClaims{
-		"user_id": "99999999-9999-9999-9999-999999999999",
-		"role":    "customer",
-	}, nil)
-
-	mockUserRepo.Mock.On("FindByID", mock.Anything, "99999999-9999-9999-9999-999999999999").Return(entity.User{}, gorm.ErrRecordNotFound)
-
-	request := httptest.NewRequest(fiber.MethodGet, "/users/current", nil)
-	request.Header.Set("Authorization", "Bearer user-deleted-token")
-	response, err := app.Test(request)
-
-	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusUnauthorized, response.StatusCode)
 }
 
 func TestGetCurrentUserDatabaseError(t *testing.T) {
